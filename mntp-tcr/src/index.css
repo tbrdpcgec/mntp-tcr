@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* tambahan styling opsional */
+body {
+  @apply bg-[#141414] font-sans;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* ============================= */
+/* Dark Scrollbar ala ChatGPT */
+/* ============================= */
+
+/* Firefox */
+.dark-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #3f3f46 #1a1a1a;
+}
+
+/* Chrome, Edge, Brave, Safari */
+.dark-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.dark-scroll::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.dark-scroll::-webkit-scrollbar-thumb {
+  background-color: #3f3f46;
+  border-radius: 8px;
+  border: 2px solid #1a1a1a;
+}
+
+.dark-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #52525b;
+}
