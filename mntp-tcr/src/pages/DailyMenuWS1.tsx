@@ -175,6 +175,7 @@ const getStatusPE = (
 ): string => {
   const openStatuses = ['🔴NEED WO'];
   const progressStatuses = [
+    '🟡RO DONE',
     '🟡WAITING INSP',
     '🟡EVALUATED',
     '🟡CONTACT OEM',

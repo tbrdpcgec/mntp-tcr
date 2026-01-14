@@ -27,8 +27,8 @@ const menuItems = [
 const dailyReportSubmenu = [
   { label: 'TCR-1 Sheetmetal', path: '/daily-report/w301' },
   { label: 'TCR-2 Composite', path: '/daily-report/w302' },
-  { label: 'TCR-3 Cabin', path: '/daily-report/w304' },
-  { label: 'TCR-4 Seat', path: '/daily-report/w305' },
+  { label: 'TCR-3 Seat', path: '/daily-report/w304' },
+  { label: 'TCR-4 Cabin', path: '/daily-report/w305' },
   { label: 'TCR-5 Machining', path: '/daily-report/w303' },
 ];
 

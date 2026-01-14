@@ -6,23 +6,35 @@ import CustomSelect from '../components/CustomSelect';
 const LOCATIONS = ['AWAITING', 'INCOMING', 'DEPLOYED', 'OUTGOING', 'RELEASE'];
 const DOC_TYPES = ['DN', 'JC', 'MDR', 'PDS'];
 const DOC_STATUS_OPTIONS = [
-  '🔴NEED MIGO',
-  '🔴NEED ZCRO',
-  '🔴NEED RO',
-  '🟡WAITING PIR',
+  '🔴NEED WO',
   '🟡RO DONE',
+  '🟡WAITING INSP',
+  '🟡EVALUATED',
+  '🟡CONTACT OEM',
+  '🟡UNDER REPAIR',
   '🟡COMPLETING DOC',
   '🟢COMPLETED',
+  '🟢RTS',
   '🟢SCANNED',
-  '🔘CANCEL',
 ];
 
 const getStatusPE = (doc_status: string): string => {
-  const progressStatus = ['🟡WAITING PIR', '🟡RO DONE', '🟡COMPLETING DOC'];
-  const closedStatus = ['🟢COMPLETED', '🟢SCANNED', '🔘CANCEL'];
+  const progressStatus = [
+    '🟡RO DONE',
+    '🟡WAITING INSP',
+    '🟡EVALUATED',
+    '🟡CONTACT OEM',
+    '🟡UNDER REPAIR',
+    '🟡COMPLETING DOC'];
+  const closedStatus = [
+    '🟢COMPLETED',
+    '🟢RTS',
+    '🟢SCANNED', '🔘CANCEL'];
 
   if (
-    ['🟡RO DONE', '🔴NEED MIGO', '🔴NEED ZCRO', '🔴NEED RO'].includes(
+    [  '🔴NEED WO',
+    '🟡RO DONE',
+    '🟡WAITING INSP'].includes(
       doc_status
     )
   )

@@ -481,9 +481,7 @@ export default function BUSH4() {
         filterDocStatus === '' || row.doc_status === filterDocStatus;
       const matchesStatusJob =
         filterStatusJob === '' || row.status_job === filterStatusJob;
-      const matchesPlntwkcntr = FILTERED_PLNTWKCNTR.includes(
-        (row.plntwkcntr || '').toUpperCase()
-      );
+      
 
       // ✅ tambahan filter untuk W301–W305
       const matchesW =
@@ -519,7 +517,6 @@ export default function BUSH4() {
         matchesAcReg &&
         matchesDocStatus &&
         matchesStatusJob &&
-        matchesPlntwkcntr &&
         matchesW &&
         matchesBase &&
         matchesPriority
@@ -1111,25 +1108,25 @@ export default function BUSH4() {
     return { label: 'SAFE', color: 'text-green-700 bg-green-100' };
   };
 
-  ////ini return
+  /////ini return
   return (
     <div className="bg-[#141414] w-full h-full">
-      <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[280vh] overflow-hidden w-full rounded-lg">
+      <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[280vh] overflow-hidden w-full rounded-lg ">
         {/* 📊 Status Summary dan Donut Chart */}
-        <div className="flex flex-col md:flex-row gap-4 w-full items-start mb-3">
-          {/* 🔹 Kiri: Dua box sejajar (Status + Priority) */}
-          <div className="flex flex-col md:flex-row gap-3 flex-wrap w-full md:w-auto max-w-[820px]"></div>
-          {/* ROTABLE COMPONENT SUMMARY */}
-          <div className="flex flex-col rounded-[10px] shadow w-full">
-            {/* TITLE */}
-            <div className="flex items-center px-4 bg-[#00838f] justify-center rounded-t-[10px] h-9">
+        <div className="  md:flex-row gap-2 w-full items-start mb-3 rounded-md overflow-auto ">
+
+          
+
+          {/* TITLE */}
+          <div className=" items-center px-2 text-center  h-6">
               <h3 className="text-white font-bold text-sm">
                 ROTABLE COMPONENT SUMMARY
               </h3>
-            </div>
-
+            </div> 
+          {/* ROTABLE COMPONENT SUMMARY */}
+          <div className="flex flex-col rounded-[10px] shadow w-full overflow-auto ">
             {/* HEADER TABLE */}
-            <div className="grid grid-cols-11 whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-gray-500">
+            <div className="grid grid-cols-11 whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#00838f]">
               <div className="border-r border-gray-400 py-2 border-r border-gray-300">
                 TYPE A/C
               </div>

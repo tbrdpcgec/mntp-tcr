@@ -115,11 +115,11 @@ function MainLayout() {
         return 'Daily Report Sheetmetal TCR-1';
       case '/daily-report/w302':
         return 'Daily Report Composite TCR-2';
-      case '/daily-report/w303':
-        return 'Daily Report Cabin Shop TCR-3';
-      case '/daily-report/w304':
-        return 'Daily Report Seat Shop TCR-4';
       case '/daily-report/w305':
+        return 'Daily Report Cabin Shop TCR-4';
+      case '/daily-report/w304':
+        return 'Daily Report Seat Shop TCR-3';
+      case '/daily-report/w303':
         return 'Daily Report Machining TCR-5';
       case '/abmp':
         return 'ABMP';
