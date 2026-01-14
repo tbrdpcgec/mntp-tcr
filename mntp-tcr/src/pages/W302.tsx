@@ -167,6 +167,8 @@ const COLUMN_ORDER = [
   { key: 'remark', label: 'Remark PE' },
   { key: 'priority', label: 'Priority' },
   { key: 'status_cs1', label: 'Status' },
+  
+  { key: 'est_date', label: 'Plan FSB' },
   { key: 'remark_cs1', label: 'Remark' },
   { key: 'handle_by_cs1', label: 'Handle by' },
   { key: 'date_closed_cs1', label: 'Date Closed' },
@@ -952,7 +954,27 @@ export default function W302() {
                           >
                             {row[key]}
                           </span>
-                        ): key === 'remark_cs1' || key === 'handle_by_cs1' ? (
+                        )   : key === 'est_date' ? (
+                          <input
+                            type="date"
+                            value={row.est_date ?? ''}
+                            onChange={(e) =>
+                              handleUpdate(
+                                row.id,
+                                'est_date',
+                                e.target.value || null
+                              )
+                            }
+                            className={`
+                              border border-transparent rounded-md px-0.5 py-0.5 text-[11px]
+                              bg-transparent hover:border-teal-500
+                              ${
+                                row.est_date ? 'text-white' : 'text-transparent'
+                              }
+                              [&::-webkit-calendar-picker-indicator]:invert
+                            `}
+                          />
+                          ) : key === 'remark_cs1' || key === 'handle_by_cs1' ? (
                           <input
                             type="text"
                             value={row[key] || ''}

@@ -550,7 +550,7 @@ export default function InputData() {
                   Doc Status
                 </button>
                 {openDocStatus && (
-                  <div className="absolute z-10 bg-[#292929] text-[11px] text-white font-normal  border mt-1 rounded shadow max-h-48  ">
+                  <div className="absolute z-10 bg-[#292929] text-[11px] text-white font-normal  border mt-1 rounded shadow max-h-54  ">
                     {DOC_STATUS_OPTIONS.map((status) => (
                       <button
                         key={status}

@@ -135,7 +135,7 @@ const timeOptions = [
   '03.00 PM',
   '10.00 PM',
 ];
-const managerOptions = ['523974 / BAMBANG SUTISNO'];
+const managerOptions = ['580126 / SLAMET KUSWANDI'];
 
 const columnWidths: Record<string, string> = {
   ac_reg: 'min-w-[70px]',
@@ -167,6 +167,8 @@ const COLUMN_ORDER = [
   { key: 'remark', label: 'Remark PE' },
   { key: 'priority', label: 'Priority' },
   { key: 'status_sm1', label: 'Status' },
+  
+  { key: 'est_date', label: 'Plan FSB' },
   { key: 'remark_sm1', label: 'Remark' },
   { key: 'handle_by_sm1', label: 'Handle by' },
   { key: 'date_closed_sm1', label: 'Date Closed' },
@@ -909,7 +911,27 @@ export default function W301() {
                         >
                           {row[key]}
                         </span>
-                      ) : key === 'report_sm1' ? (
+                      )   : key === 'est_date' ? (
+                        <input
+                          type="date"
+                          value={row.est_date ?? ''}
+                          onChange={(e) =>
+                            handleUpdate(
+                              row.id,
+                              'est_date',
+                              e.target.value || null
+                            )
+                          }
+                          className={`
+                            border border-transparent rounded-md px-0.5 py-0.5 text-[11px]
+                            bg-transparent hover:border-teal-500
+                            ${
+                              row.est_date ? 'text-white' : 'text-transparent'
+                            }
+                            [&::-webkit-calendar-picker-indicator]:invert
+                          `}
+                        />
+                        ) : key === 'report_sm1' ? (
                         <input
                           type="checkbox"
                           checked={
