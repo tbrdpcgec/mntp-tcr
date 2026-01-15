@@ -1,7 +1,7 @@
-// src/pages/W303.tsx
+// src/pages/W304.tsx
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import W303PDF from '../components/W303PDF';
+import W304PDF from '../components/W304PDF';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import CustomSelect from '../components/CustomSelect';
 
@@ -28,7 +28,7 @@ function DownloadPDFButton({
     setShowConfirm(false);
 
     const doc = (
-      <W303PDF
+      <W304PDF
         data={{
           date: formattedDate,
           acReg: 'N/A',
@@ -56,7 +56,7 @@ function DownloadPDFButton({
 
     const link = document.createElement('a');
     link.href = url;
-    link.download = `E-HOB MANTAP W303 ${formattedDate} ${shift}.pdf`;
+    link.download = `E-HOB MANTAP W304 ${formattedDate} ${shift}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -99,17 +99,19 @@ function DownloadPDFButton({
 }
 
 const supervisorList = [
-  '524759 / JAJANG HOLID',
-  '529554 / ACEP ROHENDI',
-  '581173 / ANDI',
-  '580630 / ARIE SUTRISNO',
-  '580116 / MOCHAMAD ALIMIN ULAMA',
-  '582436 / MUHAMMAD IHSAN REZA',
-  '581174 / ADE DARMAWAN',
-  '580993 / ARIF RAHMAN B',
-  '583323 / RIDWAN NURRUDIN A',
-  '581239 / LATIF SETIAWAN',
-  '583334 / MUHAMMAD SAMSUL S',
+  '532886 / NUR ARI WINTOLO',
+  '580125 / NASHRUL FALACH',
+  '580485 / ALIF YOGA A',
+  '580503 / TEGAR GILANG P',
+  '580506 / FARIS WALIYULLOH',
+  '581000 / FENDI HANANTO',
+  '581837 / ADITYA EKA N',
+  '581841 / AHMAD IQBAL',
+  '582367 / FAYDLIR RAHMAN',
+  '582369 / GILANG SULTON A',
+  '583322 / DANDYNO DUARTE',
+  '583327 / WAWAN SUGIYANTO',
+  '583328 / KHAIRUL HASBI P',
 ];
 
 const crewOptions = [
@@ -127,9 +129,10 @@ const timeOptions = [
   '03.00 PM',
   '10.00 PM',
 ];
-const managerOptions = ['524757 / DADANG NURZAMAN'];
+const managerOptions = ['580126 / SLAMET KUSWANDI'];
 
 const columnWidths: Record<string, string> = {
+  
   ac_reg: 'min-w-[70px]',
   order: 'min-w-[80px]',
   description: 'min-w-[300px]',
@@ -139,17 +142,17 @@ const columnWidths: Record<string, string> = {
   priority: 'min-w-[50px]',
   doc_status: 'min-w-[100px]',
   remark: 'min-w-[150px]',
-  status_mw: 'min-w-[90px]',
-  remark_mw: 'min-w-[250px]',
-  handle_by_mw: 'min-w-[90px]',
-  date_closed_mw: 'min-w-[80px]',
-  report_mw: 'min-w-[0px]',
-  archive_mw: 'min-w-[50px]',
+  status_sm4: 'min-w-[90px]',
+  remark_sm4: 'min-w-[250px]',
+  handle_by_sm4: 'min-w-[90px]',
+  date_closed_sm4: 'min-w-[80px]',
+  report_sm4: 'min-w-[0px]',
+  archive_sm4: 'min-w-[50px]',
 };
 
 const COLUMN_ORDER = [
   { key: 'no', label: 'No' },
-  { key: 'report_mw', label: 'Report' },
+  { key: 'report_sm4', label: 'Report' },
   { key: 'ac_reg', label: 'A/C Reg' },
   { key: 'order', label: 'Order' },
   { key: 'description', label: 'Description' },
@@ -161,11 +164,11 @@ const COLUMN_ORDER = [
 
   { key: 'remark', label: 'Remark PE' },
   { key: 'priority', label: 'Priority' },
-  { key: 'status_mw', label: 'Status' },
-  { key: 'remark_mw', label: 'Remark' },
-  { key: 'handle_by_mw', label: 'Handle by' },
-  { key: 'date_closed_mw', label: 'Date Closed' },
-  { key: 'archive_mw', label: 'Archived' },
+  { key: 'status_sm4', label: 'Status' },
+  { key: 'remark_sm4', label: 'Remark' },
+  { key: 'handle_by_sm4', label: 'Handle by' },
+  { key: 'date_closed_sm4', label: 'Date Closed' },
+  { key: 'archive_sm4', label: 'Archived' },
 ];
 
 const formatDateToDDMMMYYYY = (date: Date): string => {
@@ -190,7 +193,7 @@ const formatDateToDDMMMYYYY = (date: Date): string => {
 };
 
 const sortOptions = [
-  { value: 'report_mw', label: 'Report' },
+  { value: 'report_sm4', label: 'Report' },
   { value: 'ac_reg', label: 'A/C Reg' },
   { value: 'order', label: 'Order' },
   { value: 'description', label: 'Description' },
@@ -198,10 +201,10 @@ const sortOptions = [
   { value: 'doc_type', label: 'Doc Type' },
   { value: 'date_in', label: 'Date In' },
   { value: 'doc_status', label: 'Doc Status' },
-  { value: 'status_mw', label: 'Status' },
+  { value: 'status_sm4', label: 'Status' },
 ];
 
-export default function W303() {
+export default function W304() {
   const [rows, setRows] = useState<any[]>([]);
   const [supervisorOut, setSupervisorOut] = useState('');
   const [managerOut, setManagerOut] = useState('');
@@ -253,7 +256,7 @@ export default function W303() {
   //////
 
   const filteredRows = rows.filter((row) => {
-    const status = row.status_mw || '';
+    const status = row.status_sm4 || '';
 
     const matchesAcReg = row.ac_reg
       ?.toLowerCase()
@@ -339,24 +342,23 @@ export default function W303() {
         }
       }
 
-     
-     // 🔴 FILTER UTAMA TCR-1
-    let filtered = allRows.filter((r) => r.cek_mw === 'red');
+       // 🔴 FILTER UTAMA TCR-1
+    let filtered = allRows.filter((r) => r.cek_sm4 === 'red');
 
     // 🔴 archive_sm1 filter pakai toggle
     if (!showArchivedSM1) {
       filtered = filtered.filter(
         (r) =>
-        r.archive_mw === '' ||
-        r.archive_mw === null
+        r.archive_sm4 === '' ||
+        r.archive_sm4 === null
     );
       }
   const filteredReport = filterReportOnly
     ? filtered.filter(
         (r) =>
-          r.report_mw === true ||
-          r.report_mw === '1' ||
-          r.report_mw === 'checked'
+          r.report_sm4 === true ||
+          r.report_sm4 === '1' ||
+          r.report_sm4 === 'checked'
       )
     : filtered;
 
@@ -374,15 +376,15 @@ export default function W303() {
     reference: item.order,
     acReg: item.ac_reg || '',
     description: item.description || '',
-    remark: item.remark_mw || '',
-    status: item.status_mw?.toUpperCase() || '',
+    remark: item.remark_sm4 || '',
+    status: item.status_sm4?.toUpperCase() || '',
   }));
 
   const handleUpdate = async (id: string, key: string, value: any) => {
     const updates: Record<string, any> = { [key]: value };
 
-    if (key === 'status_mw' && value === 'CLOSED') {
-      updates['date_closed_mw'] = formatDateToDDMMMYYYY(new Date());
+    if (key === 'status_sm4' && value === 'CLOSED') {
+      updates['date_closed_sm4'] = formatDateToDDMMMYYYY(new Date());
     }
 
     const { error } = await supabase
@@ -430,7 +432,7 @@ export default function W303() {
       year: 'numeric',
     });
 
-    const header = `*DAILY WORKLOAD REPORT*\n*CABIN SHOP*\nTCR-3 | ${shiftType}\n${today}`;
+    const header = `*DAILY WORKLOAD REPORT*\n*SEAT SHOP*\nTCR-3 | ${shiftType}\n${today}`;
     const summary = `\n\n*TOTAL : ${totalOrder} ORDER*\n${totalOpen} OPEN | ${totalProgress} PROGRESS | ${totalClosed} CLOSED`;
 
     const detail = orders
@@ -633,18 +635,18 @@ export default function W303() {
                 const selectedData = rows
                   .filter(
                     (row) =>
-                      row.report_mw === true ||
-                      row.report_mw === '1' ||
-                      row.report_mw === 'checked'
+                      row.report_sm4 === true ||
+                      row.report_sm4 === '1' ||
+                      row.report_sm4 === 'checked'
                   )
                   .map((row) => [
                     clean(row.doc_type),
                     clean(row.ac_reg),
                     clean(row.order),
                     clean(row.description),
-                    clean(row.handle_by_mw),
-                    clean(row.status_mw),
-                    clean(row.remark_mw),
+                    clean(row.handle_by_sm4),
+                    clean(row.status_sm4),
+                    clean(row.remark_sm4),
                   ])
                   .map((fields) => fields.join('\t'))
                   .join('\n');
@@ -671,9 +673,9 @@ export default function W303() {
               onClick={() => {
                 const filtered = rows.filter(
                   (r) =>
-                    r.report_mw === true ||
-                    r.report_mw === '1' ||
-                    r.report_mw === 'checked'
+                    r.report_sm4 === true ||
+                    r.report_sm4 === '1' ||
+                    r.report_sm4 === 'checked'
                 );
 
                 if (filtered.length === 0) {
@@ -683,13 +685,13 @@ export default function W303() {
 
                 const totalOrder = filtered.length;
                 const totalOpen = filtered.filter(
-                  (r) => r.status_mw === 'OPEN'
+                  (r) => r.status_sm4 === 'OPEN'
                 ).length;
                 const totalProgress = filtered.filter(
-                  (r) => r.status_mw === 'PROGRESS'
+                  (r) => r.status_sm4 === 'PROGRESS'
                 ).length;
                 const totalClosed = filtered.filter(
-                  (r) => r.status_mw === 'CLOSED'
+                  (r) => r.status_sm4 === 'CLOSED'
                 ).length;
 
                 const message = generateWhatsAppMessage({
@@ -702,15 +704,16 @@ export default function W303() {
                     ac_reg: r.ac_reg || '',
                     order: r.order || '',
                     description: r.description || '',
-                    status: r.status_mw || '',
-                    remark: r.remark_mw || '',
+                    status: r.status_sm4 || '',
+                    remark: r.remark_sm4 || '',
                   })),
                   supervisor: supervisorOut,
                   crew: crewOut,
                 });
 
                 const encoded = encodeURIComponent(message);
-                const url = `https://wa.me/?text=${encoded}`;
+                const url = `https://api.whatsapp.com/send?text=${encoded}`;
+
                 window.open(url, '_blank');
               }}
               className="bg-green-500 hover:bg-green-600 text-white text-[11px] px-2 py-1 rounded shadow"
@@ -875,7 +878,7 @@ export default function W303() {
 
                       {key === 'no' ? (
                         (currentPage - 1) * rowsPerPage + rowIndex + 1
-                      ) : key === 'date_in' || key === 'date_closed_mw' ? (
+                      ) : key === 'date_in' || key === 'date_closed_sm4' ? (
                         row[key] ? (
                           new Date(row[key]).toLocaleDateString('en-GB', {
                             day: '2-digit',
@@ -885,7 +888,7 @@ export default function W303() {
                         ) : (
                           ''
                         )
-                      ) : key === 'report_mw' ? (
+                      ) : key === 'report_sm4' ? (
                         <input
                           type="checkbox"
                           checked={
@@ -902,7 +905,7 @@ export default function W303() {
                           }
                           className="form-checkbox h-4 w-4 text-blue-600"
                         />
-                        ) : key === 'status_mw' ? (
+                        ) : key === 'status_cs1' ? (
                           <CustomSelect
                             value={row[key] || ''}
                             onChange={(e) =>
@@ -966,7 +969,7 @@ export default function W303() {
                               [&::-webkit-calendar-picker-indicator]:invert
                             `}
                           />
-                          ) : key === 'remark_mw' || key === 'handle_by_mw' ? (
+                          ) : key === 'remark_cs1' || key === 'handle_by_cs1' ? (
                           <input
                             type="text"
                             value={row[key] || ''}
@@ -975,7 +978,7 @@ export default function W303() {
                             }
                             className="bg-transparent px-1 py-0.5 rounded w-full text-xs"
                           />
-                          ) : key === 'archive_mw' ? (
+                          ) : key === 'archive_sm4' ? (
                             <CustomSelect
                               value={row[key] || ''}
                               onChange={(e) =>
@@ -993,7 +996,7 @@ export default function W303() {
                                 }
                               `}
                             />
-                          ) : (
+                          )  : (
                         row[key] ?? ''
                       )}
                     </td>
