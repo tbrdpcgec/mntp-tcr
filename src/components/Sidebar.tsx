@@ -43,39 +43,78 @@ export default function Sidebar({ isCollapsed }: { isCollapsed: boolean }) {
   const [isMenuExpanded, setIsMenuExpanded] = useState(false);
   const { email } = useAuth();
 
-  // Aturan blokir menu & submenu
-  const blockedMenus: Record<string, string[]> = {
-    'tbr1dashboard@gmail.com': ['Daily Report', 'Daily Menu', 'Input Data'], // PO/CUSTOMER
-    'tbr.narrowbody@gmail.com': ['Daily Report'], // PE BUSH4
-    'tbr.structureshop@gmail.com': ['Daily Report'], // PE WS1
-    'sheetmetalbush4@gmail.com': ['Daily Menu', 'Input Data'], // SM BUSH4
-    'asmorodoro@gmail.com': ['Daily Menu', 'Input Data'], // COMP BUSH4
-    'tbr6composite.garuda@gmail.com': ['Daily Menu', 'Input Data'], // COMP BUSH4
+  // =============================
+  // ACCESS CONFIG
+  // =============================
+
+  const DEFAULT_ALLOWED_MENUS = ['Home', 'Dashboard'];
+
+  const FULL_ACCESS = [
+    'Home',
+    'Dashboard',
+    'Daily Report',
+    'Daily Menu',
+    'Input Data',
+    'ABMP',
+    'SP',
+  ];
+
+  const allowedMenus: Record<string, string[]> = {
+    'pujialiminxii2@gmail.com': FULL_ACCESS,
+    'zz@gmail.com': FULL_ACCESS,
+
+    'tcr5@gmail.com': ['Home', 'Dashboard', 'Input Data', 'Daily Report'],
+    'tcr1@gmail.com': ['Home', 'Dashboard', 'Daily Report'],
+    'tcr2@gmail.com': ['Home', 'Dashboard', 'Daily Report'],
+    'tcr3@gmail.com': ['Home', 'Dashboard', 'Daily Report'],
+    'tcr4@gmail.com': ['Home', 'Dashboard', 'Daily Report'],
   };
 
-  const blockedSubmenus: Record<string, string[]> = {
-    'tbr.narrowbody@gmail.com': [
-      ...dailyReportSubmenu.map((sub) => sub.label),
-      'TBR WS1',
-    ], // PE BUSH4
-    'tbr.structureshop@gmail.com': [
-      ...dailyReportSubmenu.map((sub) => sub.label),
-      'TBR BUSH4',
-    ], // PE WS1
+  const FULL_SUBMENU_ACCESS = {
+    'Daily Report': dailyReportSubmenu.map((s) => s.label),
+    'Daily Menu': dailyMenuSubmenu.map((s) => s.label),
+  };
 
-    'sheetmetalbush4@gmail.com': ['W301', 'W302', 'W303', 'W305'], // SM BUSH4
-    'asmorodoro@gmail.com': ['W301', 'W302', 'W303', 'W304'], // COMP BUSH4
-    'tbr6composite.garuda@gmail.com': ['W301', 'W302', 'W303', 'W304'], // COMP BUSH4
+  const allowedSubmenus: Record<string, Record<string, string[]>> = {
+    'tbr1dashboardQ@gmail.com': FULL_SUBMENU_ACCESS,
+
+    'tcr1@gmail.com': {
+      'Daily Report': ['TCR-1 Sheetmetal'],
+    },
+    'tcr2@gmail.com': {
+      'Daily Report': ['TCR-2 Composite'],
+    },
+    'tcr3@gmail.com': {
+      'Daily Report': ['TCR-3 Seat'],
+    },
+    'tcr4@gmail.com': {
+      'Daily Report': ['TCR-4 Cabin'],
+    },
+    'tcr5@gmail.com': {
+      'Daily Report': ['TCR-5 Machining'],
+    },
   };
 
   // Filter menu utama
-  const filteredMenuItems = menuItems.filter(
-    (item) => !blockedMenus[email]?.includes(item.label)
+  const userAllowedMenus = allowedMenus[email] ?? DEFAULT_ALLOWED_MENUS;
+
+  const userAllowedSubmenus = allowedSubmenus[email] ?? {};
+
+  const filteredMenuItems = menuItems.filter((item) =>
+    userAllowedMenus.includes(item.label)
   );
 
-  // Filter submenu
-  const filterSubmenu = (submenu: { label: string; path: string }[]) =>
-    submenu.filter((sub) => !blockedSubmenus[email]?.includes(sub.label));
+  const filterSubmenu = (
+    menuLabel: string,
+    submenu: { label: string; path: string }[]
+  ) => {
+    const allowed = userAllowedSubmenus[menuLabel];
+
+    // kalau user tidak punya rule → tampilkan semua
+    if (!allowed) return submenu;
+
+    return submenu.filter((sub) => allowed.includes(sub.label));
+  };
 
   return (
     <div
@@ -137,37 +176,52 @@ export default function Sidebar({ isCollapsed }: { isCollapsed: boolean }) {
             {!isCollapsed &&
               item.label === 'Daily Report' &&
               isReportExpanded && (
-                <ul className="ml-6 mt-0 space-y-1 text-xs">
-                  {filterSubmenu(dailyReportSubmenu).map((sub) => (
-                    <li key={sub.label}>
-                      <Link
-                        to={sub.path}
-                        className={`block px-2 py-1 rounded hover:bg-[#00707A] transition-colors duration-200 ${
-                          location.pathname === sub.path ? 'bg-[#00636B]' : ''
-                        } text-[#f0f0f0]`}
-                      >
-                        {sub.label}
-                      </Link>
+                <ul className="ml-6 mt-1 space-y-1 text-xs">
+                  {filterSubmenu('Daily Report', dailyReportSubmenu).length >
+                  0 ? (
+                    filterSubmenu('Daily Report', dailyReportSubmenu).map(
+                      (sub) => (
+                        <li key={sub.label}>
+                          <Link
+                            to={sub.path}
+                            className={`block px-2 py-1 rounded hover:bg-[#00707A] ${
+                              location.pathname === sub.path
+                                ? 'bg-[#00636B]'
+                                : ''
+                            }`}
+                          >
+                            {sub.label}
+                          </Link>
+                        </li>
+                      )
+                    )
+                  ) : (
+                    <li className="px-2 py-1 text-gray-400 italic">
+                      No access
                     </li>
-                  ))}
+                  )}
                 </ul>
               )}
 
             {/* Daily Menu Submenu */}
             {!isCollapsed && item.label === 'Daily Menu' && isMenuExpanded && (
               <ul className="ml-6 mt-1 space-y-1 text-xs">
-                {filterSubmenu(dailyMenuSubmenu).map((sub) => (
-                  <li key={sub.label}>
-                    <Link
-                      to={sub.path}
-                      className={`block px-2 py-1 rounded hover:bg-[#00707A] transition-colors duration-200 ${
-                        location.pathname === sub.path ? 'bg-[#00636B]' : ''
-                      } text-[#f0f0f0]`}
-                    >
-                      {sub.label}
-                    </Link>
-                  </li>
-                ))}
+                {filterSubmenu('Daily Menu', dailyMenuSubmenu).length > 0 ? (
+                  filterSubmenu('Daily Menu', dailyMenuSubmenu).map((sub) => (
+                    <li key={sub.label}>
+                      <Link
+                        to={sub.path}
+                        className={`block px-2 py-1 rounded hover:bg-[#00707A] ${
+                          location.pathname === sub.path ? 'bg-[#00636B]' : ''
+                        }`}
+                      >
+                        {sub.label}
+                      </Link>
+                    </li>
+                  ))
+                ) : (
+                  <li className="px-2 py-1 text-gray-400 italic">No access</li>
+                )}
               </ul>
             )}
           </li>
