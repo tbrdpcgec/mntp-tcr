@@ -176,7 +176,7 @@ export default function Sidebar({ isCollapsed }: { isCollapsed: boolean }) {
       {/* Version Info di pojok kiri bawah */}
       {!isCollapsed && (
         <div className="absolute bottom-6 left-2 text-xs text-[#f0f0f0]">
-          Version PA.1.3.0
+          Version PA.1.4.0
         </div>
       )}
     </div>
