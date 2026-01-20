@@ -105,7 +105,7 @@ const supervisorList = [
   '580504 / WAGINO',
   '583833 / HAIDAR AKBAR SUJANA',
   '583943 / RULI HANAFI',
-  '532863	/ EKO PRIWANTOLO',
+  '532863 / EKO PRIWANTOLO',
 ];
 
 const crewOptions = [
@@ -701,7 +701,7 @@ export default function W302() {
                 ).length;
 
                 const message = generateWhatsAppMessage({
-                  shiftType: 'MORNING SHIFT',
+                  shiftType: shiftOut,
                   totalOrder,
                   totalOpen,
                   totalProgress,
@@ -714,7 +714,7 @@ export default function W302() {
                     remark: r.remark_cs1 || '',
                   })),
                   supervisor: supervisorOut,
-                  crew: 'CREW A',
+                  crew: crewOut,
                 });
 
                 const encoded = encodeURIComponent(message);
