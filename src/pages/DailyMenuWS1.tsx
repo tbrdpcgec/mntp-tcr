@@ -14,11 +14,10 @@ type Row = {
 
 const DOC_STATUS_OPTIONS = [
   '🔴NEED WO',
-  '🟡RO DONE',
   '🟡WAITING INSP',
   '🟡EVALUATED',
   '🟡CONTACT OEM',
-  '🟡UNDER REPAIR',
+  '🟡DEPLOYED',
   '🟡COMPLETING DOC',
   '🟢COMPLETED',
   '🟢RTS',
@@ -52,8 +51,8 @@ const columnWidths: Record<string, string> = {
   plntwkcntr: 'min-w-[0px]',
   date_in: 'min-w-[80px]',
   doc_status: 'min-w-[30px]',
-  pn: 'min-w-[80px]',
-  sn: 'min-w-[80px]',
+  pn: 'min-w-[100px]',
+  sn: 'min-w-[sn0px]',
   type_ac: 'min-w-[80px]',
   category: 'min-w-[100px]',
   priority: 'min-w-[00px]',
@@ -80,14 +79,14 @@ const columnWidths: Record<string, string> = {
 const COLUMN_ORDER: { key: string; label: string }[] = [
   { key: 'no', label: 'No' },
   { key: 'doc_type', label: 'Doc' },
+  { key: 'ac_reg', label: 'A/C Reg' },
   { key: 'order', label: 'Order' },
   { key: 'description', label: 'Description' },
-  { key: 'ac_reg', label: 'A/C Reg' },
   { key: 'type_ac', label: 'Type A/C' },
   { key: 'pn', label: 'P/N' },
   { key: 'sn', label: 'S/N' },
   { key: 'category', label: 'Category' },
-  { key: 'location', label: 'Location' },
+  { key: 'location', label: 'Pos' },
   { key: 'date_in', label: 'Date In' },
   { key: 'remark_mat', label: 'Material' },
   { key: 'doc_status', label: 'Doc Status' },
@@ -175,11 +174,10 @@ const getStatusPE = (
 ): string => {
   const openStatuses = ['🔴NEED WO'];
   const progressStatuses = [
-    '🟡RO DONE',
     '🟡WAITING INSP',
     '🟡EVALUATED',
     '🟡CONTACT OEM',
-    '🟡UNDER REPAIR',
+    '🟡DEPLOYED',
     '🟡COMPLETING DOC',
   ];
   const closedStatuses = ['🟢COMPLETED', '🟢SCANNED', '🟢RTS'];
@@ -187,7 +185,7 @@ const getStatusPE = (
   if (openStatuses.includes(doc_status)) return 'OPEN';
 
   if (progressStatuses.includes(doc_status)) {
-    if ((doc_status === '🟡WAITING INSP', '🟡RO DONE')) {
+    if ((doc_status === '🟡WAITING INSP', '🟡DEPLOYED')) {
       const statuses = [
         status_sm1,
         status_sm4,
@@ -278,6 +276,21 @@ type OrderFilter = {
   valid: boolean;
 };
 
+const SHOP_MAP: Record<string, string> = {
+  cek_sm1: 'SHEETMETAL',
+  cek_sm4: 'SEAT',
+  cek_cs1: 'COMPOSITE',
+  cek_cs4: 'CABIN',
+  cek_mw: 'MACHINING',
+};
+
+const generateShopFromCek = (row: any): string => {
+  return Object.entries(SHOP_MAP)
+    .filter(([cekKey]) => row[cekKey] === 'red')
+    .map(([, shopName]) => shopName)
+    .join(' / ');
+};
+
 export default function BUSH4() {
   const [rows, setRows] = useState<Row[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -318,6 +331,13 @@ export default function BUSH4() {
   const [selectedRowId, setSelectedRowId] = useState<string | number | null>(
     null
   );
+
+  /////////untuk shop
+
+  const updateShopAuto = (row: any) => {
+    const shopValue = generateShopFromCek(row);
+    handleUpdate(row.id, 'shop', shopValue);
+  };
 
   /////////////// untuk select row
   const getRowClass = (rowIndex: number) => {
@@ -664,6 +684,16 @@ export default function BUSH4() {
     if (currentRow) {
       // gabungkan row lama + update baru → simulatedRow
       let simulatedRow = { ...currentRow, ...updates };
+
+      // 🔹 Step X: Auto calculate SHOP jika cek_* berubah
+      const affectsShop = Object.keys(updates).some((k) =>
+        ['cek_sm1', 'cek_sm4', 'cek_cs1', 'cek_cs4', 'cek_mw'].includes(k)
+      );
+
+      if (affectsShop) {
+        updates['shop'] = generateShopFromCek(simulatedRow);
+        simulatedRow = { ...simulatedRow, shop: updates['shop'] };
+      }
 
       // 🔹 Step 1: Recalculate status_pe kalau perlu
       const keys = Object.keys(updates);
@@ -1432,6 +1462,10 @@ export default function BUSH4() {
                               [&::-webkit-calendar-picker-indicator]:invert
                             `}
                           />
+                        ) : key === 'shop' ? (
+                          <span className="px-1 text-[11px]">
+                            {generateShopFromCek(row)}
+                          </span>
                         ) : key === 'location' ? (
                           <CustomSelect
                             value={row[key] || ''}
@@ -1565,6 +1599,8 @@ export default function BUSH4() {
                         ) : key === 'tracking_sp' ||
                           key === 'link_scan' ||
                           key === 'type_ac' ||
+                          key === 'pn' ||
+                          key === 'sn' ||
                           key === 'category' ||
                           key === 'safe_stock' ||
                           key === 'remain_stock' ||
