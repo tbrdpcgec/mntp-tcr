@@ -99,15 +99,12 @@ function DownloadPDFButton({
 }
 
 const supervisorList = [
-  '524759 / JAJANG HOLID',
   '529554 / ACEP ROHENDI',
   '581173 / ANDI',
   '580630 / ARIE SUTRISNO',
   '580116 / MOCHAMAD ALIMIN ULAMA',
-  '582436 / MUHAMMAD IHSAN REZA',
   '581174 / ADE DARMAWAN',
   '580993 / ARIF RAHMAN B',
-  '583323 / RIDWAN NURRUDIN A',
   '581239 / LATIF SETIAWAN',
   '583334 / MUHAMMAD SAMSUL S',
 ];
@@ -145,6 +142,7 @@ const columnWidths: Record<string, string> = {
   date_closed_mw: 'min-w-[80px]',
   report_mw: 'min-w-[0px]',
   archive_mw: 'min-w-[50px]',
+  est_date: 'min-w-[100px]',
 };
 
 const COLUMN_ORDER = [
@@ -155,13 +153,14 @@ const COLUMN_ORDER = [
   { key: 'description', label: 'Description' },
 
   { key: 'doc_type', label: 'Doc' },
-  { key: 'location', label: 'Location' },
+  { key: 'location', label: 'Pos' },
   { key: 'doc_status', label: 'Doc Status' },
-  { key: 'est_date', label: 'Plan FSB' },
 
   { key: 'remark', label: 'Remark PE' },
   { key: 'priority', label: 'Priority' },
   { key: 'status_mw', label: 'Status' },
+
+  { key: 'est_date', label: 'Plan FSB' },
   { key: 'remark_mw', label: 'Remark' },
   { key: 'handle_by_mw', label: 'Handle by' },
   { key: 'date_closed_mw', label: 'Date Closed' },
@@ -201,6 +200,24 @@ const sortOptions = [
   { value: 'status_mw', label: 'Status' },
 ];
 
+const REMARK_OPTIONS: string[] = [
+  'WAITING MATERIAL',
+  'WAITING DECISION',
+  'HOLD',
+];
+
+const HANDLE_BY_OPTIONS: string[] = [
+  'ACEP',
+  'ANDI',
+  'ARIE',
+  'ALIMIN',
+  'ARIF',
+  'ADE',
+  'LATIF',
+  'SAMSUL',
+  'ROFIQ',
+];
+
 export default function W303() {
   const [rows, setRows] = useState<any[]>([]);
   const [supervisorOut, setSupervisorOut] = useState('');
@@ -218,6 +235,8 @@ export default function W303() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All Status');
   const [filterAcReg, setFilterAcReg] = useState('');
+  const [tempRemark, setTempRemark] = useState<Record<string, string>>({});
+  const [tempHandleBy, setTempHandleBy] = useState<Record<string, string>>({});
 
   const [filterPriority, setFilterPriority] = useState('All');
   const [priorityData, setPriorityData] = useState<any[]>([]);
@@ -339,26 +358,23 @@ export default function W303() {
         }
       }
 
-     
-     // 🔴 FILTER UTAMA TCR-1
-    let filtered = allRows.filter((r) => r.cek_mw === 'red');
+      // 🔴 FILTER UTAMA TCR-1
+      let filtered = allRows.filter((r) => r.cek_mw === 'red');
 
-    // 🔴 archive_sm1 filter pakai toggle
-    if (!showArchivedSM1) {
-      filtered = filtered.filter(
-        (r) =>
-        r.archive_mw === '' ||
-        r.archive_mw === null
-    );
+      // 🔴 archive_sm1 filter pakai toggle
+      if (!showArchivedSM1) {
+        filtered = filtered.filter(
+          (r) => r.archive_mw === '' || r.archive_mw === null
+        );
       }
-  const filteredReport = filterReportOnly
-    ? filtered.filter(
-        (r) =>
-          r.report_mw === true ||
-          r.report_mw === '1' ||
-          r.report_mw === 'checked'
-      )
-    : filtered;
+      const filteredReport = filterReportOnly
+        ? filtered.filter(
+            (r) =>
+              r.report_mw === true ||
+              r.report_mw === '1' ||
+              r.report_mw === 'checked'
+          )
+        : filtered;
 
       setRows(filteredReport);
       setFilteredData(filteredReport);
@@ -430,7 +446,7 @@ export default function W303() {
       year: 'numeric',
     });
 
-    const header = `*DAILY WORKLOAD REPORT*\n*MACHINING*\nTCR-5 | ${shiftType}\n${today}`;
+    const header = `*DAILY WORKLOAD REPORT*\n*CABIN SHOP*\nTCR-3 | ${shiftType}\n${today}`;
     const summary = `\n\n*TOTAL : ${totalOrder} ORDER*\n${totalOpen} OPEN | ${totalProgress} PROGRESS | ${totalClosed} CLOSED`;
 
     const detail = orders
@@ -568,58 +584,56 @@ export default function W303() {
 
               {/* 🔧 Filter Status */}
               <CustomSelect
-  value={filterStatus}
-  onChange={(e) => setFilterStatus(e.target.value)}
-  options={[
-    { label: 'All Status', value: 'All Status' },
-    { label: 'OPEN', value: 'OPEN' },
-    { label: 'PROGRESS', value: 'PROGRESS' },
-    { label: 'CLOSED', value: 'CLOSED' },
-    { label: 'NO STATUS', value: 'NO STATUS' },
-  ]}
-  className="border border-gray-500 rounded-md px-1 py-1 text-[11px] text-white font-normal hover:bg-gray-500 hover:border-gray-500 shadow w-[120px]"
-/>
-
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                options={[
+                  { label: 'All Status', value: 'All Status' },
+                  { label: 'OPEN', value: 'OPEN' },
+                  { label: 'PROGRESS', value: 'PROGRESS' },
+                  { label: 'CLOSED', value: 'CLOSED' },
+                  { label: 'NO STATUS', value: 'NO STATUS' },
+                ]}
+                className="border border-gray-500 rounded-md px-1 py-1 text-[11px] text-white font-normal hover:bg-gray-500 hover:border-gray-500 shadow w-[120px]"
+              />
 
               {/* 🧭 Sort Dropdown */}
               <CustomSelect
-  value={sortKey}
-  onChange={(e) => setSortKey(e.target.value)}
-  options={[
-    { label: 'Sort by...', value: '' },
-    ...sortOptions.map(({ value, label }) => ({
-      value,
-      label,
-    })),
-  ]}
-  className="border border-gray-500 rounded-md px-1 py-1 text-[11px] text-white font-normal hover:bg-gray-500 hover:border-gray-500 shadow w-[130px]"
-/>
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value)}
+                options={[
+                  { label: 'Sort by...', value: '' },
+                  ...sortOptions.map(({ value, label }) => ({
+                    value,
+                    label,
+                  })),
+                ]}
+                className="border border-gray-500 rounded-md px-1 py-1 text-[11px] text-white font-normal hover:bg-gray-500 hover:border-gray-500 shadow w-[130px]"
+              />
 
-<CustomSelect
-  value={sortDirection}
-  onChange={(e) =>
-    setSortDirection(e.target.value as 'asc' | 'desc')
-  }
-  options={[
-    { label: 'A-Z', value: 'asc' },
-    { label: 'Z-A', value: 'desc' },
-  ]}
-  className="border border-gray-500 rounded-md px-1 py-1 text-[11px] text-white font-normal hover:bg-gray-500 hover:border-gray-500 shadow w-[80px]"
-/>
-
+              <CustomSelect
+                value={sortDirection}
+                onChange={(e) =>
+                  setSortDirection(e.target.value as 'asc' | 'desc')
+                }
+                options={[
+                  { label: 'A-Z', value: 'asc' },
+                  { label: 'Z-A', value: 'desc' },
+                ]}
+                className="border border-gray-500 rounded-md px-1 py-1 text-[11px] text-white font-normal hover:bg-gray-500 hover:border-gray-500 shadow w-[80px]"
+              />
             </div>
             <button
-  onClick={() => setShowArchivedSM1((prev) => !prev)}
-  className={`px-2 py-1 text-[11px] rounded border shadow
+              onClick={() => setShowArchivedSM1((prev) => !prev)}
+              className={`px-2 py-1 text-[11px] rounded border shadow
     ${
       showArchivedSM1
         ? 'bg-gray-700 text-yellow-300 border-gray-500'
         : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'
     }
   `}
->
-  {showArchivedSM1 ? 'Hide Archived' : 'Show Archived'}
-</button>
+            >
+              {showArchivedSM1 ? 'Hide Archived' : 'Show Archived'}
+            </button>
             {/* Tombol Copy */}
             <button
               onClick={() => {
@@ -736,7 +750,6 @@ export default function W303() {
             />
           </div>
 
-
           {/* ✅ MODIFIKASI DIMULAI: Bungkus semua form dengan kondisi */}
           {filterReportOnly && (
             <>
@@ -841,14 +854,16 @@ export default function W303() {
             </>
           )}
         </div>
-        
-        
+
         <div className="w-full overflow-auto max-h-[70vh] rounded-md shadow-inner dark-scroll">
-          <table className=" w-full table-auto text-[11px] leading-tight border-collapse" >
+          <table className=" w-full table-auto text-[11px] leading-tight border-collapse">
             <thead className="sticky top-0 z-10 bg-teal-700 shadow">
               <tr className="bg-[#00919f] text-white text-xs font-semibold text-center border-b border-white/30">
                 {COLUMN_ORDER.map((col) => (
-                  <th key={col.key} className=" px-1 py-1 text-center border-l border-[#141414]">
+                  <th
+                    key={col.key}
+                    className=" px-1 py-1 text-center border-l border-[#141414]"
+                  >
                     {col.label}
                   </th>
                 ))}
@@ -857,14 +872,19 @@ export default function W303() {
 
             <tbody>
               {paginatedRows.map((row, rowIndex) => (
-                <tr key={row.id || rowIndex}
-                className={` text-white ${rowIndex % 2 === 0 ? 'bg-[#1e1e1e]' : 'bg-[#292929]'}
+                <tr
+                  key={row.id || rowIndex}
+                  className={` text-white ${
+                    rowIndex % 2 === 0 ? 'bg-[#1e1e1e]' : 'bg-[#292929]'
+                  }
       border-b border-white/30 `}
-              >
+                >
                   {COLUMN_ORDER.map(({ key }) => (
                     <td
                       key={key}
-                      className={` px-1 py-1 border-l border-[#141414] ${columnWidths[key] || ''} ${
+                      className={` px-1 py-1 border-l border-[#141414] ${
+                        columnWidths[key] || ''
+                      } ${
                         key === 'description' ||
                         key === 'remark' ||
                         key === 'doc_status'
@@ -872,7 +892,6 @@ export default function W303() {
                           : 'text-center'
                       }`}
                     >
-
                       {key === 'no' ? (
                         (currentPage - 1) * rowsPerPage + rowIndex + 1
                       ) : key === 'date_in' || key === 'date_closed_mw' ? (
@@ -902,19 +921,19 @@ export default function W303() {
                           }
                           className="form-checkbox h-4 w-4 text-blue-600"
                         />
-                        ) : key === 'status_mw' ? (
-                          <CustomSelect
-                            value={row[key] || ''}
-                            onChange={(e) =>
-                              handleUpdate(row.id, key, e.target.value)
-                            }
-                            options={[
-                              { label: '', value: '' },
-                              { label: 'OPEN', value: 'OPEN' },
-                              { label: 'PROGRESS', value: 'PROGRESS' },
-                              { label: 'CLOSED', value: 'CLOSED' },
-                            ]}
-                            className={`border border-transparent rounded-md px-0.5 py-0.5 w-full
+                      ) : key === 'status_mw' ? (
+                        <CustomSelect
+                          value={row[key] || ''}
+                          onChange={(e) =>
+                            handleUpdate(row.id, key, e.target.value)
+                          }
+                          options={[
+                            { label: '', value: '' },
+                            { label: 'OPEN', value: 'OPEN' },
+                            { label: 'PROGRESS', value: 'PROGRESS' },
+                            { label: 'CLOSED', value: 'CLOSED' },
+                          ]}
+                          className={`border border-transparent rounded-md px-0.5 py-0.5 w-full
                             text-[11px] text-left font-normal
                             transition-all duration-300 ease-in-out
                               ${
@@ -927,12 +946,10 @@ export default function W303() {
                                   : 'bg-transparent text-gray-200'
                               }
                             `}
-                          />
-                    
-                        
-                        ) : key === 'priority' ? (
-                          <span
-                            className={`px-1 py-0.5 rounded text-xs font-semibold
+                        />
+                      ) : key === 'priority' ? (
+                        <span
+                          className={`px-1 py-0.5 rounded text-xs font-semibold
                               ${
                                 row[key] === 'High'
                                   ? 'bg-red-500 text-white'
@@ -943,57 +960,129 @@ export default function W303() {
                                   : 'text-gray-400'
                               }
                             `}
-                          >
-                            {row[key]}
-                          </span>
-                        )   : key === 'est_date' ? (
-                          <input
-                            type="date"
-                            value={row.est_date ?? ''}
-                            onChange={(e) =>
-                              handleUpdate(
-                                row.id,
-                                'est_date',
-                                e.target.value || null
-                              )
-                            }
-                            className={`
-                              border border-transparent rounded-md px-0.5 py-0.5 text-[11px]
-                              bg-transparent hover:border-teal-500
-                              ${
-                                row.est_date ? 'text-white' : 'text-transparent'
-                              }
-                              [&::-webkit-calendar-picker-indicator]:invert
-                            `}
-                          />
-                          ) : key === 'remark_mw' || key === 'handle_by_mw' ? (
+                        >
+                          {row[key]}
+                        </span>
+                      ) : key === 'est_date' ? (
+                        <input
+                          type="date"
+                          value={row.est_date ?? ''}
+                          onChange={(e) =>
+                            handleUpdate(
+                              row.id,
+                              'est_date',
+                              e.target.value || null
+                            )
+                          }
+                          className={`
+                            border border-transparent rounded-md px-0.5 py-0.5 text-[11px]
+                            bg-transparent hover:border-teal-500
+                            ${row.est_date ? 'text-white' : 'text-transparent'}
+                            [&::-webkit-calendar-picker-indicator]:invert
+                          `}
+                        />
+                      ) : key === 'remark_mw' ? (
+                        <div className="relative w-full">
                           <input
                             type="text"
-                            value={row[key] || ''}
+                            value={tempRemark[row.id] ?? row[key] ?? ''}
                             onChange={(e) =>
-                              handleUpdate(row.id, key, e.target.value)
+                              setTempRemark((prev) => ({
+                                ...prev,
+                                [row.id]: e.target.value,
+                              }))
                             }
-                            className="bg-transparent px-1 py-0.5 rounded w-full text-xs"
+                            onBlur={() =>
+                              handleUpdate(
+                                row.id,
+                                key,
+                                tempRemark[row.id] ?? ''
+                              )
+                            }
+                            placeholder=" "
+                            list={`remark_list_${row.id}`}
+                            className="
+                            border border-transparent
+                            hover:border-teal-500
+                                  bg-transparent
+                                  px-1 py-0.5
+                                  rounded-md
+                                  w-full
+                                  text-[11px]
+                                  text-left
+                                  break-words
+                                  whitespace-normal
+                                  focus:outline-none
+                                  focus:ring-1
+                                  focus:ring-teal-500
+                                "
                           />
-                          ) : key === 'archive_mw' ? (
-                            <CustomSelect
-                              value={row[key] || ''}
-                              onChange={(e) =>
-                                handleUpdate(row.id, key, e.target.value)
-                              }
-                              options={[
-                                { label: '', value: '' },
-                                { label: 'YES', value: 'YES' },
-                              ]}
-                              className={` rounded px-1 py-0.5 text-xs w-full
+
+                          <datalist id={`remark_list_${row.id}`}>
+                            {REMARK_OPTIONS.map((option) => (
+                              <option key={option} value={option} />
+                            ))}
+                          </datalist>
+                        </div>
+                      ) : key === 'handle_by_mw' ? (
+                        <div className="relative w-full">
+                          <input
+                            type="text"
+                            value={tempHandleBy[row.id] ?? row[key] ?? ''}
+                            onChange={(e) =>
+                              setTempHandleBy((prev) => ({
+                                ...prev,
+                                [row.id]: e.target.value,
+                              }))
+                            }
+                            onBlur={() =>
+                              handleUpdate(
+                                row.id,
+                                key,
+                                tempHandleBy[row.id] ?? ''
+                              )
+                            }
+                            list={`handle_by_list_${row.id}`}
+                            className="
+                            
+                            border border-transparent
+                            hover:border-teal-500
+                                  bg-transparent
+                                  px-1 py-0.5
+                                  rounded-md
+                                  w-full
+                                  text-[11px]
+                                  focus:outline-none
+                                  focus:ring-1
+                                  focus:ring-teal-500
+                                "
+                          />
+
+                          <datalist id={`handle_by_list_${row.id}`}>
+                            {HANDLE_BY_OPTIONS.map((option) => (
+                              <option key={option} value={option} />
+                            ))}
+                          </datalist>
+                        </div>
+                      ) : key === 'archive_mw' ? (
+                        <CustomSelect
+                          value={row[key] || ''}
+                          onChange={(e) =>
+                            handleUpdate(row.id, key, e.target.value)
+                          }
+                          options={[
+                            { label: '', value: '' },
+                            { label: 'YES', value: 'YES' },
+                          ]}
+                          className={` rounded px-1 py-0.5 text-xs w-full
                                 ${
                                   row[key] === 'YES'
                                     ? 'bg-gray-700 text-gray-300'
                                     : 'bg-transparent text-white'
                                 }
                               `}
-                            />
-                          ) : (
+                        />
+                      ) : (
                         row[key] ?? ''
                       )}
                     </td>

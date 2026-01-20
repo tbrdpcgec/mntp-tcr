@@ -1,18 +1,31 @@
 import { useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
+
+type AbmpRow = {
+  id: number;
+  ac_reg: string;
+  rts: string;
+};
 
 export default function Abmp() {
   const [pdfId, setPdfId] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const [lastUpdate, setLastUpdate] = useState<string>('');
+  const [tableData, setTableData] = useState<AbmpRow[]>([]);
+  const [loadingTable, setLoadingTable] = useState<boolean>(true);
+  const [showModal, setShowModal] = useState(false);
+  const [rows, setRows] = useState<{ ac_reg: string; rts: string | null }[]>([
+    { ac_reg: '', rts: null },
+  ]);
+  const [activeRow, setActiveRow] = useState<number | null>(null);
 
   const sheetUrl =
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR87GYwPPCTGhIYZy-7p5SkOYqTaGpBUbbkvZTDRUMqDBOZvnhra6l4_N3O1PwKr2EL2qD9ReOb5Jac/pub?output=csv';
 
-  // ✅ Format tanggal ke dd-MMM-yyyy (perbaikan: parse dd/mm/yyyy atau dd-mm-yyyy secara manual)
+  // ===== FORMAT DATE =====
   const formatDate = (raw: string) => {
     if (!raw) return raw;
 
-    // 1) Kalau angka serial Google Sheets (mis. "44485")
     if (!isNaN(Number(raw))) {
       const serial = Number(raw);
       const baseDate = new Date(1899, 11, 30);
@@ -26,13 +39,13 @@ export default function Abmp() {
         .replace(/ /g, '-');
     }
 
-    // 2) Kalau format dd/mm/yyyy atau dd-mm-yyyy (parse manual agar tidak keliru MM/DD)
     const dmMatch = raw.trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
     if (dmMatch) {
-      const day = Number(dmMatch[1]);
-      const month = Number(dmMatch[2]) - 1; // JS month 0-based
-      const year = Number(dmMatch[3]);
-      const d = new Date(year, month, day);
+      const d = new Date(
+        Number(dmMatch[3]),
+        Number(dmMatch[2]) - 1,
+        Number(dmMatch[1])
+      );
       if (!isNaN(d.getTime())) {
         return d
           .toLocaleDateString('en-GB', {
@@ -44,7 +57,6 @@ export default function Abmp() {
       }
     }
 
-    // 3) Coba parse generic (ISO atau format yang dikenali JS)
     const date = new Date(raw);
     if (!isNaN(date.getTime())) {
       return date
@@ -56,11 +68,10 @@ export default function Abmp() {
         .replace(/ /g, '-');
     }
 
-    // fallback: kembalikan apa adanya
     return raw;
   };
 
-  // Update dari Google Sheet CSV
+  // ===== UPDATE PDF FROM GOOGLE SHEET =====
   const handleUpdate = async () => {
     try {
       const res = await fetch(sheetUrl);
@@ -69,12 +80,11 @@ export default function Abmp() {
       const lastRow = rows[rows.length - 1];
 
       if (lastRow && lastRow[2] && lastRow[3]) {
-        const dateCol = lastRow[2].trim(); // kolom C = tanggal
-        const pdfCol = lastRow[3].trim(); // kolom D = PDF ID
+        const dateCol = lastRow[2].trim();
+        const pdfCol = lastRow[3].trim();
 
         setPdfId(pdfCol);
         localStorage.setItem('abmpPdfId', pdfCol);
-
         setLastUpdate(formatDate(dateCol));
 
         setMessage('✅ ABMP updated!');
@@ -88,9 +98,24 @@ export default function Abmp() {
     }
   };
 
-  // Ambil data langsung saat buka halaman
+  // ===== FETCH TABLE FROM SUPABASE =====
+  const fetchTable = async () => {
+    setLoadingTable(true);
+    const { data, error } = await supabase
+      .from('abmp')
+      .select('id, ac_reg, rts')
+      .order('ac_reg', { ascending: true });
+
+    if (!error && data) {
+      setTableData(data);
+    }
+    setLoadingTable(false);
+  };
+
+  // ===== INIT =====
   useEffect(() => {
     handleUpdate();
+    fetchTable();
   }, []);
 
   const googleFormUrl = 'https://forms.gle/3KxHarsbBNLpeNE29';
@@ -100,9 +125,15 @@ export default function Abmp() {
 
   return (
     <div className="p-1 space-y-2">
-      {/* Baris tombol Upload + Update + Info */}
+      {/* ACTION BAR */}
       <div className="flex items-center gap-2">
-        {/* Tombol Upload */}
+        <button
+          onClick={() => setShowModal(true)}
+          className="px-3 py-1 text-sm font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 shadow"
+        >
+          + Add RTS
+        </button>
+
         <a
           href={googleFormUrl}
           target="_blank"
@@ -112,7 +143,6 @@ export default function Abmp() {
           Upload ABMP
         </a>
 
-        {/* Tombol Update */}
         <button
           onClick={handleUpdate}
           className="px-3 py-1 text-sm font-semibold bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 shadow"
@@ -120,34 +150,187 @@ export default function Abmp() {
           Update
         </button>
 
-        {/* Last Update */}
         {lastUpdate && (
           <span className="text-sm text-gray-700">
             Last Update: <strong>{lastUpdate}</strong>
           </span>
         )}
 
-        {/* Notifikasi */}
         {message && (
           <span className="text-sm font-medium text-green-700 bg-green-100 px-3 py-1 rounded border border-green-300 shadow-sm">
             {message}
           </span>
         )}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg w-[500px] p-4 space-y-3 shadow-lg">
+              <h2 className="text-sm font-bold">Add ABMP Data</h2>
+
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border px-2 py-1">AC REG</th>
+                    <th className="border px-2 py-1">RTS</th>
+                    <th className="border px-2 py-1 w-10">❌</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, idx) => (
+                    <tr key={idx}>
+                      <td className="border px-1 py-1">
+                        <input
+                          value={row.ac_reg}
+                          onChange={(e) => {
+                            const copy = [...rows];
+                            copy[idx].ac_reg = e.target.value.toUpperCase();
+                            setRows(copy);
+                          }}
+                          className="
+                          w-full border border-transparent
+                          hover:border-teal-500 rounded px-1 py-0.5 text-[11px]
+                          text-black bg-white
+                        "
+                        />
+                      </td>
+
+                      <td className="border px-1 py-1">
+                        {/* RTS DATE PICKER */}
+                        <input
+                          type="date"
+                          value={row.rts ?? ''}
+                          onChange={(e) => {
+                            const copy = [...rows];
+                            copy[idx].rts = e.target.value || null;
+                            setRows(copy);
+                          }}
+                          className={`
+                          border border-transparent rounded-md px-0.5 py-0.5 text-[11px]
+                          bg-white hover:border-teal-500
+                          ${row.rts ? 'text-black' : 'text-transparent'}
+                          [&::-webkit-calendar-picker-indicator]:invert
+                        `}
+                        />
+                      </td>
+
+                      <td className="border text-center">
+                        <button
+                          onClick={() =>
+                            setRows(rows.filter((_, i) => i !== idx))
+                          }
+                          className="text-red-400 hover:text-red-600"
+                        >
+                          ✕
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setRows([...rows, { ac_reg: '', rts: '' }])}
+                  className="text-xs px-2 py-1 bg-blue-500 text-white rounded"
+                >
+                  + Add Row
+                </button>
+
+                <div className="space-x-2">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="text-xs px-3 py-1 border rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const payload = rows.filter((r) => r.ac_reg && r.rts);
+
+                      if (!payload.length) return;
+
+                      await supabase.from('abmp').insert(payload);
+
+                      setShowModal(false);
+                      setRows([{ ac_reg: '', rts: '' }]);
+                      fetchTable(); // refresh tabel kiri
+                    }}
+                    className="text-xs px-3 py-1 bg-green-600 text-white rounded"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Viewer PDF */}
-      {pdfUrl && (
-        <div className="w-full h-[80vh] rounded-lg shadow border">
-          <iframe
-            src={pdfUrl}
-            width="100%"
-            height="100%"
-            allow="autoplay"
-            title="ABMP PDF"
-            className="rounded-lg"
-          />
+      {/* MAIN CONTENT */}
+      <div className="grid grid-cols-12 gap-2 h-[80vh]">
+        {/* KIRI - TABLE */}
+        <div className="col-span-3 border rounded-lg overflow-auto">
+          {loadingTable ? (
+            <div className="p-2 text-sm text-gray-500">Loading...</div>
+          ) : (
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-[#00919f] text-white text-xs font-semibold text-center">
+                  <th className="border px-2 py-1">No</th>
+                  <th className="border px-2 py-1">AC REG</th>
+                  <th className="border px-2 py-1">RTS</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {tableData.map((row, rowIndex) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => setActiveRow(row.id)}
+                    className={`
+        cursor-pointer
+        ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
+        hover:bg-slate-200
+        ${activeRow === row.id ? 'bg-teal-200' : ''}
+        transition-colors
+      `}
+                  >
+                    <td className="border px-2 py-1 bg-inherit text-center">
+                      {rowIndex + 1}
+                    </td>
+                    <td className="border px-2 py-1 bg-inherit">
+                      {row.ac_reg}
+                    </td>
+                    <td className="border px-2 py-1 bg-inherit">
+                      {row.rts
+                        ? new Date(row.rts)
+                            .toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                            .replace(/ /g, '-')
+                        : ''}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      )}
+
+        {/* KANAN - PDF */}
+        <div className="col-span-9 border rounded-lg overflow-hidden">
+          {pdfUrl && (
+            <iframe
+              src={pdfUrl}
+              width="100%"
+              height="100%"
+              allow="autoplay"
+              title="ABMP PDF"
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

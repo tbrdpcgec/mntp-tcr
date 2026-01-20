@@ -98,22 +98,7 @@ function DownloadPDFButton({
   );
 }
 
-const supervisorList = [
-  '532863 / EKO PRIWANTOLO',
-  '532862 / EKO KURNIAJI P',
-  '580120 / AGUNG JATI A',
-  '580124 / ILYAS',
-  '580631 / TAMRIN ATN',
-  '581011 / SOFYAN',
-  '581233 / ABDUL KHOLIL',
-  '581844 / BAGAS WIBOWO',
-  '581850 / HAMSYAH F',
-  '581854 / IQBAL M BOVI',
-  '583319 / FARID MUTAQIN',
-  '583318 / ILHAM SURYA P',
-  '583331 / MUHAMMAD ALDI F',
-  '583332 / MUHAMMAD BILAL A',
-];
+const supervisorList = ['ID / NAME'];
 
 const crewOptions = [
   'CREW A',
@@ -158,13 +143,13 @@ const COLUMN_ORDER = [
   { key: 'description', label: 'Description' },
 
   { key: 'doc_type', label: 'Doc' },
-  { key: 'location', label: 'Location' },
+  { key: 'location', label: 'Pos' },
   { key: 'doc_status', label: 'Doc Status' },
-  { key: 'est_date', label: 'Plan FSB' },
 
   { key: 'remark', label: 'Remark PE' },
   { key: 'priority', label: 'Priority' },
   { key: 'status_cs4', label: 'Status' },
+  { key: 'est_date', label: 'Plan FSB' },
   { key: 'remark_cs4', label: 'Remark' },
   { key: 'handle_by_cs4', label: 'Handle by' },
   { key: 'date_closed_cs4', label: 'Date Closed' },
@@ -206,6 +191,14 @@ const sortOptions = [
   { value: 'status_cs4', label: 'Status' },
 ];
 
+const REMARK_OPTIONS: string[] = [
+  'WAITING MATERIAL',
+  'WAITING DECISION',
+  'HOLD',
+];
+
+const HANDLE_BY_OPTIONS: string[] = ['DODIK', 'ANJAR', 'ARROFI'];
+
 export default function W305() {
   const [rows, setRows] = useState<any[]>([]);
   const [supervisorOut, setSupervisorOut] = useState('');
@@ -224,6 +217,8 @@ export default function W305() {
   const [filterStatus, setFilterStatus] = useState('All Status');
   const [filterAcReg, setFilterAcReg] = useState('');
   const [showArchivedSM1, setShowArchivedSM1] = useState(false);
+  const [tempRemark, setTempRemark] = useState<Record<string, string>>({});
+  const [tempHandleBy, setTempHandleBy] = useState<Record<string, string>>({});
 
   const [filterPriority, setFilterPriority] = useState('All');
   const [priorityData, setPriorityData] = useState<any[]>([]);
@@ -430,7 +425,7 @@ export default function W305() {
       year: 'numeric',
     });
 
-    const header = `*DAILY WORKLOAD REPORT*\n*CABIN SHOP*\nTCR-4 | ${shiftType}\n${today}`;
+    const header = `*DAILY WORKLOAD REPORT*\n*MACHINING & WELDING*\nTCR-5 | ${shiftType}\n${today}`;
     const summary = `\n\n*TOTAL : ${totalOrder} ORDER*\n${totalOpen} OPEN | ${totalProgress} PROGRESS | ${totalClosed} CLOSED`;
 
     const detail = orders
@@ -949,7 +944,7 @@ export default function W305() {
                         >
                           {row[key]}
                         </span>
-                      )   : key === 'est_date' ? (
+                      ) : key === 'est_date' ? (
                         <input
                           type="date"
                           value={row.est_date ?? ''}
@@ -961,23 +956,96 @@ export default function W305() {
                             )
                           }
                           className={`
-                            border border-transparent rounded-md px-0.5 py-0.5 text-[11px]
-                            bg-transparent hover:border-teal-500
-                            ${
-                              row.est_date ? 'text-white' : 'text-transparent'
+                              border border-transparent rounded-md px-0.5 py-0.5 text-[11px]
+                              bg-transparent hover:border-teal-500
+                              ${
+                                row.est_date ? 'text-white' : 'text-transparent'
+                              }
+                              [&::-webkit-calendar-picker-indicator]:invert
+                            `}
+                        />
+                      ) : key === 'remark_cs4' ? (
+                        <div className="relative w-full">
+                          <input
+                            type="text"
+                            value={tempRemark[row.id] ?? row[key] ?? ''}
+                            onChange={(e) =>
+                              setTempRemark((prev) => ({
+                                ...prev,
+                                [row.id]: e.target.value,
+                              }))
                             }
-                            [&::-webkit-calendar-picker-indicator]:invert
-                          `}
-                        />
-                        ) : key === 'remark_cs1' || key === 'handle_by_cs1' ? (
-                        <input
-                          type="text"
-                          value={row[key] || ''}
-                          onChange={(e) =>
-                            handleUpdate(row.id, key, e.target.value)
-                          }
-                          className="bg-transparent px-1 py-0.5 rounded w-full text-xs"
-                        />
+                            onBlur={() =>
+                              handleUpdate(
+                                row.id,
+                                key,
+                                tempRemark[row.id] ?? ''
+                              )
+                            }
+                            placeholder=" "
+                            list={`remark_list_${row.id}`}
+                            className="
+                            border border-transparent
+                            hover:border-teal-500
+                                  bg-transparent
+                                  px-1 py-0.5
+                                  rounded-md
+                                  w-full
+                                  text-[11px]
+                                  text-left
+                                  break-words
+                                  whitespace-normal
+                                  focus:outline-none
+                                  focus:ring-1
+                                  focus:ring-teal-500
+                                "
+                          />
+
+                          <datalist id={`remark_list_${row.id}`}>
+                            {REMARK_OPTIONS.map((option) => (
+                              <option key={option} value={option} />
+                            ))}
+                          </datalist>
+                        </div>
+                      ) : key === 'handle_by_cs4' ? (
+                        <div className="relative w-full">
+                          <input
+                            type="text"
+                            value={tempHandleBy[row.id] ?? row[key] ?? ''}
+                            onChange={(e) =>
+                              setTempHandleBy((prev) => ({
+                                ...prev,
+                                [row.id]: e.target.value,
+                              }))
+                            }
+                            onBlur={() =>
+                              handleUpdate(
+                                row.id,
+                                key,
+                                tempHandleBy[row.id] ?? ''
+                              )
+                            }
+                            list={`handle_by_list_${row.id}`}
+                            className="
+                            border border-transparent
+                            hover:border-teal-500
+                                  bg-transparent
+                                  px-1 py-0.5
+                                  rounded-md
+                                  w-full
+                                  text-[11px]
+                                  focus:outline-none
+                                  focus:ring-1
+                                  focus:ring-teal-500
+                                "
+                          />
+
+                          <datalist id={`handle_by_list_${row.id}`}>
+                            {HANDLE_BY_OPTIONS.map((option) => (
+                              <option key={option} value={option} />
+                            ))}
+                          </datalist>
+                        </div>
                       ) : key === 'archive_cs4' ? (
                         <CustomSelect
                           value={row[key] || ''}

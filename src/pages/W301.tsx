@@ -101,23 +101,13 @@ function DownloadPDFButton({
 
 const supervisorList = [
   '529528 / NANDANG SUPRIATNA',
-  '532859 / CANDRA SUKMANA',
   '532871 / HERU GUNAWAN',
   '580123 / AHADI SUSANTO',
-  '580726 / MUKLIS SURYADI',
-  '580728 / MUHAMMAD TAUFIQ R',
+  '532886 /	NUR ARI WINTOLO',
   '581222 / MUHAMMAD ARROFI H',
   "581836 / ABYAN MAS'UDIN N",
-  '581843 / ASHARI ADI PRASETYO',
   '582366 / DODIK DWI JANUAR',
-  '582378 / RISANG PANJALU',
-  '583311 / ADITYA TRI RAHMADANI',
-  '583313 / ACHMAD FAUZAN',
   '583315 / ANJAR SETYANTO',
-  '583321 / BACHTIYAR OKTA A',
-  '583325 / TIO PUTRA ADI NEGARA',
-  '583329 / MAS YURIANTO',
-  '583314 / AFRIDANI FAHSAL R',
 ];
 
 const crewOptions = [
@@ -162,12 +152,12 @@ const COLUMN_ORDER = [
   { key: 'order', label: 'Order' },
   { key: 'description', label: 'Description' },
   { key: 'doc_type', label: 'Doc' },
-  { key: 'location', label: 'Location' },
+  { key: 'location', label: 'Pos' },
   { key: 'doc_status', label: 'Doc Status' },
   { key: 'remark', label: 'Remark PE' },
   { key: 'priority', label: 'Priority' },
   { key: 'status_sm1', label: 'Status' },
-  
+
   { key: 'est_date', label: 'Plan FSB' },
   { key: 'remark_sm1', label: 'Remark' },
   { key: 'handle_by_sm1', label: 'Handle by' },
@@ -208,6 +198,14 @@ const sortOptions = [
   { value: 'status_sm1', label: 'Status' },
 ];
 
+const REMARK_OPTIONS: string[] = [
+  'WAITING MATERIAL',
+  'WAITING DECISION',
+  'HOLD',
+];
+
+const HANDLE_BY_OPTIONS: string[] = ['DODIK', 'ANJAR', 'ARROFI'];
+
 export default function W301() {
   const [rows, setRows] = useState<any[]>([]);
   const [supervisorOut, setSupervisorOut] = useState('');
@@ -229,6 +227,8 @@ export default function W301() {
   const [filterPriority, setFilterPriority] = useState('All');
   const [priorityData, setPriorityData] = useState<any[]>([]);
   const [showArchivedSM1, setShowArchivedSM1] = useState(false);
+  const [tempRemark, setTempRemark] = useState<Record<string, string>>({});
+  const [tempHandleBy, setTempHandleBy] = useState<Record<string, string>>({});
 
   const [notification, setNotification] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState('');
@@ -346,28 +346,23 @@ export default function W301() {
         }
       }
 
-     
-    // 🔴 FILTER UTAMA TCR-1
-    let filtered = allRows.filter((r) => r.cek_sm1 === 'red');
+      // 🔴 FILTER UTAMA TCR-1
+      let filtered = allRows.filter((r) => r.cek_sm1 === 'red');
 
-    // 🔴 archive_sm1 filter pakai toggle
-    if (!showArchivedSM1) {
-      filtered = filtered.filter(
-        (r) =>
-
-          r.archive_sm1 === '' ||
-          r.archive_sm1 === null
-      );
+      // 🔴 archive_sm1 filter pakai toggle
+      if (!showArchivedSM1) {
+        filtered = filtered.filter(
+          (r) => r.archive_sm1 === '' || r.archive_sm1 === null
+        );
       }
-    const filteredReport = filterReportOnly
-      ? filtered.filter(
-          (r) =>
-            r.report_sm1 === true ||
-            r.report_sm1 === '1' ||
-            r.report_sm1 === 'checked'
-        )
-      : filtered;
-
+      const filteredReport = filterReportOnly
+        ? filtered.filter(
+            (r) =>
+              r.report_sm1 === true ||
+              r.report_sm1 === '1' ||
+              r.report_sm1 === 'checked'
+          )
+        : filtered;
 
       setRows(filteredReport);
       setFilteredData(filteredReport);
@@ -619,17 +614,17 @@ export default function W301() {
               />
             </div>
             <button
-  onClick={() => setShowArchivedSM1((prev) => !prev)}
-  className={`px-2 py-1 text-[11px] rounded border shadow
+              onClick={() => setShowArchivedSM1((prev) => !prev)}
+              className={`px-2 py-1 text-[11px] rounded border shadow
     ${
       showArchivedSM1
         ? 'bg-gray-700 text-yellow-300 border-gray-500'
         : 'bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700'
     }
   `}
->
-  {showArchivedSM1 ? 'Hide Archived' : 'Show Archived'}
-</button>
+            >
+              {showArchivedSM1 ? 'Hide Archived' : 'Show Archived'}
+            </button>
             {/* Tombol Copy */}
             <button
               onClick={() => {
@@ -852,12 +847,15 @@ export default function W301() {
         </div>
 
         {/* 🧊 Ini pembungkus baru untuk freeze header */}
-         <div className="w-full overflow-auto max-h-[70vh] rounded-md shadow-inner dark-scroll">
-          <table className=" w-full table-auto text-[11px] leading-tight border-collapse" >
+        <div className="w-full overflow-auto max-h-[70vh] rounded-md shadow-inner dark-scroll">
+          <table className=" w-full table-auto text-[11px] leading-tight border-collapse">
             <thead className="sticky top-0 z-10 bg-teal-700 shadow">
               <tr className="bg-[#00919f] text-white text-xs font-semibold text-center border-b border-white/30">
                 {COLUMN_ORDER.map((col) => (
-                  <th key={col.key} className=" px-1 py-1 text-center border-l border-[#141414]">
+                  <th
+                    key={col.key}
+                    className=" px-1 py-1 text-center border-l border-[#141414]"
+                  >
                     {col.label}
                   </th>
                 ))}
@@ -866,14 +864,19 @@ export default function W301() {
 
             <tbody>
               {paginatedRows.map((row, rowIndex) => (
-                <tr key={row.id || rowIndex}
-                className={` text-white ${rowIndex % 2 === 0 ? 'bg-[#1e1e1e]' : 'bg-[#292929]'}
+                <tr
+                  key={row.id || rowIndex}
+                  className={` text-white ${
+                    rowIndex % 2 === 0 ? 'bg-[#1e1e1e]' : 'bg-[#292929]'
+                  }
       border-b border-white/30 `}
-              >
+                >
                   {COLUMN_ORDER.map(({ key }) => (
                     <td
                       key={key}
-                      className={` px-1 py-1 border-l border-[#141414] ${columnWidths[key] || ''} ${
+                      className={` px-1 py-1 border-l border-[#141414] ${
+                        columnWidths[key] || ''
+                      } ${
                         key === 'description' ||
                         key === 'remark' ||
                         key === 'doc_status'
@@ -881,8 +884,6 @@ export default function W301() {
                           : 'text-center'
                       }`}
                     >
-
-
                       {key === 'no' ? (
                         (currentPage - 1) * rowsPerPage + rowIndex + 1
                       ) : key === 'date_in' || key === 'date_closed_sm1' ? (
@@ -911,7 +912,7 @@ export default function W301() {
                         >
                           {row[key]}
                         </span>
-                      )   : key === 'est_date' ? (
+                      ) : key === 'est_date' ? (
                         <input
                           type="date"
                           value={row.est_date ?? ''}
@@ -923,15 +924,15 @@ export default function W301() {
                             )
                           }
                           className={`
-                            border border-transparent rounded-md px-0.5 py-0.5 text-[11px]
-                            bg-transparent hover:border-teal-500
-                            ${
-                              row.est_date ? 'text-white' : 'text-transparent'
-                            }
-                            [&::-webkit-calendar-picker-indicator]:invert
-                          `}
+                              border border-transparent rounded-md px-0.5 py-0.5 text-[11px]
+                              bg-transparent hover:border-teal-500
+                              ${
+                                row.est_date ? 'text-white' : 'text-transparent'
+                              }
+                              [&::-webkit-calendar-picker-indicator]:invert
+                            `}
                         />
-                        ) : key === 'report_sm1' ? (
+                      ) : key === 'report_sm1' ? (
                         <input
                           type="checkbox"
                           checked={
@@ -974,21 +975,88 @@ export default function W301() {
                             }
                           `}
                         />
-                  
-                      
-                      ) : key === 'remark_sm1' || key === 'handle_by_sm1' ? (
-                        <input
-                          type="text"
-                          value={row[key] || ''}
-                          onChange={(e) =>
-                            handleUpdate(row.id, key, e.target.value)
-                          }
-                          className="bg-transparent px-1 py-0.5 rounded w-full text-xs 
-                          text-left break-words whitespace-normal
-                          
-                          focus:outline-none
-                          focus:ring-1 focus:ring-teal-500"
-                        />
+                      ) : key === 'remark_sm1' ? (
+                        <div className="relative w-full">
+                          <input
+                            type="text"
+                            value={tempRemark[row.id] ?? row[key] ?? ''}
+                            onChange={(e) =>
+                              setTempRemark((prev) => ({
+                                ...prev,
+                                [row.id]: e.target.value,
+                              }))
+                            }
+                            onBlur={() =>
+                              handleUpdate(
+                                row.id,
+                                key,
+                                tempRemark[row.id] ?? ''
+                              )
+                            }
+                            placeholder=" "
+                            list={`remark_list_${row.id}`}
+                            className="
+                            border border-transparent
+                            hover:border-teal-500
+                                bg-transparent
+                                px-1 py-0.5
+                                rounded-md
+                                w-full
+                                text-[11px]
+                                text-left
+                                break-words
+                                whitespace-normal
+                                focus:outline-none
+                                focus:ring-1
+                                focus:ring-teal-500
+                              "
+                          />
+
+                          <datalist id={`remark_list_${row.id}`}>
+                            {REMARK_OPTIONS.map((option) => (
+                              <option key={option} value={option} />
+                            ))}
+                          </datalist>
+                        </div>
+                      ) : key === 'handle_by_sm1' ? (
+                        <div className="relative w-full">
+                          <input
+                            type="text"
+                            value={tempHandleBy[row.id] ?? row[key] ?? ''}
+                            onChange={(e) =>
+                              setTempHandleBy((prev) => ({
+                                ...prev,
+                                [row.id]: e.target.value,
+                              }))
+                            }
+                            onBlur={() =>
+                              handleUpdate(
+                                row.id,
+                                key,
+                                tempHandleBy[row.id] ?? ''
+                              )
+                            }
+                            list={`handle_by_list_${row.id}`}
+                            className="
+                            border border-transparent
+                            hover:border-teal-500
+                                bg-transparent
+                                px-1 py-0.5
+                                rounded-md
+                                w-full
+                                text-[11px]
+                                focus:outline-none
+                                focus:ring-1
+                                focus:ring-teal-500
+                              "
+                          />
+
+                          <datalist id={`handle_by_list_${row.id}`}>
+                            {HANDLE_BY_OPTIONS.map((option) => (
+                              <option key={option} value={option} />
+                            ))}
+                          </datalist>
+                        </div>
                       ) : key === 'archive_sm1' ? (
                         <CustomSelect
                           value={row[key] || ''}
