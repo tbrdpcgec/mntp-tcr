@@ -63,7 +63,6 @@ export default function Sidebar({ isCollapsed }: { isCollapsed: boolean }) {
     'pujialiminxii2@gmail.com': FULL_ACCESS,
     'zz@gmail.com': FULL_ACCESS,
 
-
     'tcr910@gmail.com': ['Home', 'Dashboard', 'Daily Menu', 'Input Data', 'ABMP', 'SP'],
     'tcr5@gmail.com': ['Home', 'Dashboard', 'Input Data', 'Daily Report'],
     'tcr1@gmail.com': ['Home', 'Dashboard', 'Daily Report'],
