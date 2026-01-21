@@ -7,33 +7,28 @@ const LOCATIONS = ['AWAITING', 'INCOMING', 'DEPLOYED', 'OUTGOING', 'RELEASE'];
 const DOC_TYPES = ['DN', 'JC', 'MDR', 'PDS'];
 const DOC_STATUS_OPTIONS = [
   '🔴NEED WO',
-  '🟡RO DONE',
   '🟡WAITING INSP',
   '🟡EVALUATED',
   '🟡CONTACT OEM',
-  '🟡UNDER REPAIR',
+  '🟡DEPLOYED',
   '🟡COMPLETING DOC',
   '🟢COMPLETED',
-  '🟢RTS',
   '🟢SCANNED',
 ];
 
 const getStatusPE = (doc_status: string): string => {
   const progressStatus = [
-    '🟡RO DONE',
     '🟡WAITING INSP',
     '🟡EVALUATED',
     '🟡CONTACT OEM',
-    '🟡UNDER REPAIR',
+    '🟡DEPLOYED',
     '🟡COMPLETING DOC'];
   const closedStatus = [
     '🟢COMPLETED',
-    '🟢RTS',
-    '🟢SCANNED', '🔘CANCEL'];
+    '🟢SCANNED'];
 
   if (
     [  '🔴NEED WO',
-    '🟡RO DONE',
     '🟡WAITING INSP'].includes(
       doc_status
     )
@@ -377,9 +372,10 @@ export default function InputData() {
       const rows = lines.map((line) => line.split('\t'));
 
       const newForms = rows.map((cells) => ({
-        order: cells[0] ? Number(cells[0]) : null,
-        description: cells[1] || '',
-        ac_reg: cells[2] || '',
+        ac_reg: cells[0] || '',
+        order: cells[1] ? Number(cells[1]) : null,
+        description: cells[2] || '',
+       
         pn: cells[3] || '',
         sn: cells[4] || '',
         doc_type: cells[5] || '',
@@ -582,9 +578,10 @@ export default function InputData() {
             >
               <thead className="bg-gradient-to-t from-[#00838F] to-[#00838F] text-white text-xs text-center">
                 <tr>
+                  
+                <th className="border px-2 py-2">A/C Reg</th>
                   <th className="border px-2 py-2">Order</th>
                   <th className="border px-2 py-2">Description</th>
-                  <th className="border px-2 py-2">A/C Reg</th>
 
                   <th className="border px-2 py-2">Part Number</th>
                   <th className="border px-2 py-2">Serial Number</th>
@@ -602,13 +599,29 @@ export default function InputData() {
               <tbody>
                 {forms.map((row, index) => (
                   <tr key={index} className="bg-[#1F262A] text-center">
-                    {/* Order */}
+                   {/* A/C Reg */}
+                   <td className="border px-2 py-1 min-w-[90px]">
+                      <input
+                        ref={(el) => {
+                          if (!inputRefs.current[index])
+                            inputRefs.current[index] = [];
+                          inputRefs.current[index][0] = el; // 1 = kolom ac_reg
+                        }}
+                        type="text"
+                        name="ac_reg"
+                        value={row.ac_reg}
+                        onChange={(e) => handleChange(e, index)}
+                        onPaste={(e) => handlePasteCell(e, index, 'ac_reg')}
+                        className="border border-teal-500 text-white bg-[#292929] rounded px-2 py-1 w-full"
+                      />
+                    </td>
+                     {/* Order */}
                     <td className=" px-2 py-1 min-w-[110px]">
                       <input
                         ref={(el) => {
                           if (!inputRefs.current[index])
                             inputRefs.current[index] = [];
-                          inputRefs.current[index][0] = el;
+                          inputRefs.current[index][1] = el;
                         }}
                         type="number" // ✅ lebih aman pakai number
                         name="order"
@@ -635,7 +648,7 @@ export default function InputData() {
                         ref={(el) => {
                           if (!inputRefs.current[index])
                             inputRefs.current[index] = [];
-                          inputRefs.current[index][1] = el;
+                          inputRefs.current[index][2] = el;
                         }}
                         name="description"
                         value={row.description}
@@ -647,22 +660,7 @@ export default function InputData() {
                         className="border border-teal-500 text-white bg-[#292929] rounded px-2 py-1 w-full"
                       />
                     </td>
-                    {/* A/C Reg */}
-                    <td className="border px-2 py-1 min-w-[90px]">
-                      <input
-                        ref={(el) => {
-                          if (!inputRefs.current[index])
-                            inputRefs.current[index] = [];
-                          inputRefs.current[index][2] = el; // 1 = kolom ac_reg
-                        }}
-                        type="text"
-                        name="ac_reg"
-                        value={row.ac_reg}
-                        onChange={(e) => handleChange(e, index)}
-                        onPaste={(e) => handlePasteCell(e, index, 'ac_reg')}
-                        className="border border-teal-500 text-white bg-[#292929] rounded px-2 py-1 w-full"
-                      />
-                    </td>
+                    
 
                     {/* PN */}
                     <td className="border px-2 py-1 min-w-[120px]">

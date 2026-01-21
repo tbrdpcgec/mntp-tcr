@@ -20,7 +20,6 @@ const DOC_STATUS_OPTIONS = [
   '🟡DEPLOYED',
   '🟡COMPLETING DOC',
   '🟢COMPLETED',
-  '🟢RTS',
   '🟢SCANNED',
 ];
 
@@ -90,7 +89,6 @@ const COLUMN_ORDER: { key: string; label: string }[] = [
   { key: 'date_in', label: 'Date In' },
   { key: 'remark_mat', label: 'Material' },
   { key: 'doc_status', label: 'Doc Status' },
-
   { key: 'priority', label: 'Priority' },
   { key: 'remark', label: 'Remark' },
   { key: 'cek_sm1', label: 'TCR-1' },
@@ -180,18 +178,22 @@ const getStatusPE = (
     '🟡DEPLOYED',
     '🟡COMPLETING DOC',
   ];
-  const closedStatuses = ['🟢COMPLETED', '🟢SCANNED', '🟢RTS'];
+  const closedStatuses = ['🟢COMPLETED', '🟢SCANNED'];
 
   if (openStatuses.includes(doc_status)) return 'OPEN';
 
   if (progressStatuses.includes(doc_status)) {
-    if ((doc_status === '🟡WAITING INSP', '🟡DEPLOYED')) {
+    if (['🟡WAITING INSP', '🟡DEPLOYED'].includes(doc_status)) {
       const statuses = [
         status_sm1,
         status_sm4,
         status_cs1,
         status_cs4,
         status_mw,
+        tjo,
+        uld,
+        nd,
+        other, // ✅ WAJIB
       ];
 
       // ✅ pastikan nilai bukan undefined/null dan benar-benar kosong secara teks
@@ -721,7 +723,7 @@ export default function BUSH4() {
           simulatedRow.status_sm4 ?? '',
           simulatedRow.status_cs1 ?? '',
           simulatedRow.status_cs4 ?? '',
-          simulatedRow.status_mw ?? ''
+          simulatedRow.status_mw ?? '',
         );
 
         simulatedRow = { ...simulatedRow, status_pe: updates['status_pe'] };
@@ -816,7 +818,7 @@ export default function BUSH4() {
           row.status_sm4,
           row.status_cs1,
           row.status_cs4,
-          row.status_mw
+          row.status_mw,
         );
 
         const newRemarkPro = buildRemarkPro(row);
