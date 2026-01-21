@@ -15,28 +15,26 @@ type Row = {
 };
 
 const DOC_STATUS_OPTIONS = [
-  '🔴NEED MIGO',
-  '🔴NEED ZCRO',
-  '🔴NEED RO',
-  '🟡WAITING PIR',
-  '🟡RO DONE',
+  '🔴NEED WO',
+  '🟡WAITING INSP',
+  '🟡EVALUATED',
+  '🟡CONTACT OEM',
+  '🟡DEPLOYED',
   '🟡COMPLETING DOC',
   '🟢COMPLETED',
   '🟢SCANNED',
-  '🔘CANCEL',
 ];
 
 // Array status doc_status
 const docStatusList = [
-  '🔴NEED MIGO',
-  '🔴NEED ZCRO',
-  '🔴NEED RO',
-  '🟡WAITING PIR',
-  '🟡RO DONE',
+  '🔴NEED WO',
+  '🟡WAITING INSP',
+  '🟡EVALUATED',
+  '🟡CONTACT OEM',
+  '🟡DEPLOYED',
   '🟡COMPLETING DOC',
   '🟢COMPLETED',
   '🟢SCANNED',
-  '🔘CANCEL',
 ];
 // Warna berbeda untuk setiap status (sesuai emoji)
 const docStatusColors = [
@@ -234,6 +232,9 @@ export default function BUSH4() {
   const [showMenu, setShowMenu] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
+  const [projectRows, setProjectRows] = useState<any[]>([]);
+  const [abmpRows, setAbmpRows] = useState<any[]>([]);
+
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<null | (() => void)>(null);
   const today = new Date();
@@ -422,7 +423,7 @@ export default function BUSH4() {
 
       while (moreData) {
         const { data, error } = await supabase
-          .from('mntp_tcr')
+          .from('v_project_with_rts')
           .select('*')
           .eq('archived', false)
           .order('date_in', { ascending: false })
@@ -460,6 +461,9 @@ export default function BUSH4() {
     fetchData();
   }, []);
 
+  /////row raw
+  const rawRows = rows;
+
   const filteredRows = rows
     .filter((row) => {
       if (showOnlyChecked && !selectedRows.includes(row.id)) return false;
@@ -468,6 +472,13 @@ export default function BUSH4() {
       const matchesOrder =
         filterOrders.length === 0 ||
         filterOrders.some((o) => o.value === String(row.order));
+
+      // ❌ filter PN yang TIDAK boleh tampil
+      const blockedPnPrefixes = ['141A4810-', 'D53132010000'];
+
+      const matchesPn = !blockedPnPrefixes.some((pn) =>
+        (row.pn || '').includes(pn)
+      );
 
       const matchesSearch = Object.values(row)
         .join(' ')
@@ -481,7 +492,6 @@ export default function BUSH4() {
         filterDocStatus === '' || row.doc_status === filterDocStatus;
       const matchesStatusJob =
         filterStatusJob === '' || row.status_job === filterStatusJob;
-      
 
       // ✅ tambahan filter untuk W301–W305
       const matchesW =
@@ -500,16 +510,6 @@ export default function BUSH4() {
           : true;
 
       // ✅ Tambahan filter Base
-      const matchesBase =
-        filterBase === ''
-          ? true
-          : filterBase === 'Workshop 1'
-          ? ['CGK', 'GAH1', 'GAH2', 'GAH3', 'WSST'].includes(
-              (row.plntwkcntr || '').toUpperCase()
-            )
-          : filterBase === 'Hangar 4'
-          ? ['GAH4', 'WSSR'].includes((row.plntwkcntr || '').toUpperCase())
-          : true;
 
       return (
         matchesOrder &&
@@ -518,8 +518,8 @@ export default function BUSH4() {
         matchesDocStatus &&
         matchesStatusJob &&
         matchesW &&
-        matchesBase &&
-        matchesPriority
+        matchesPriority &&
+        matchesPn
       );
     })
 
@@ -564,342 +564,11 @@ export default function BUSH4() {
       .trim()
       .toUpperCase();
 
-  //w301
-  // Hitung donut berdasarkan filteredRows, tetapi hanya untuk baris yang cek_sm1 truthy
-  const openCountSm1 = filteredRows.filter(
-    (r) => isChecked(r.cek_sm1) && getStatus(r.status_sm1) === 'OPEN'
-  ).length;
-
-  const progressCountSm1 = filteredRows.filter(
-    (r) => isChecked(r.cek_sm1) && getStatus(r.status_sm1) === 'PROGRESS'
-  ).length;
-
-  const closedCountSm1 = filteredRows.filter(
-    (r) => isChecked(r.cek_sm1) && getStatus(r.status_sm1) === 'CLOSED'
-  ).length;
-
-  // Total yang punya nilai cek_sm1 (sesuai definisi isChecked)
-  const totalWithCekSm1 = filteredRows.filter((r) =>
-    isChecked(r.cek_sm1)
-  ).length;
-
-  // undefined = baris dengan cek_sm1 true tetapi status_sm1 bukan OPEN/PROGRESS/CLOSED
-  const undefinedCountSm1 = Math.max(
-    0,
-    totalWithCekSm1 - (openCountSm1 + progressCountSm1 + closedCountSm1)
-  );
-
-  // Data untuk donut chart — pakai warna yang sama seperti yang benar sebelumnya
-  const chartDataSm1 = [
-    { name: 'OPEN', value: openCountSm1, color: '#ef4444' }, // merah
-    { name: 'PROGRESS', value: progressCountSm1, color: '#facc15' }, // kuning
-    { name: 'CLOSED', value: closedCountSm1, color: '#22c55e' }, // hijau
-    { name: 'UNDEFINED', value: undefinedCountSm1, color: '#9ca3af' }, // abu
-  ];
-
-  // Persentase closed (1 desimal)
-  const closedPercentageSm1 =
-    totalWithCekSm1 > 0
-      ? ((closedCountSm1 / totalWithCekSm1) * 100).toFixed(1)
-      : '0';
-
-  const toggleSelectRow = (id: string) => {
-    setSelectedRows((prevSelected) =>
-      prevSelected.includes(id)
-        ? prevSelected.filter((rowId) => rowId !== id)
-        : [...prevSelected, id]
-    );
-  };
-
   const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
   const paginatedRows = filteredRows.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
-
-  // hitung data status_sm1 donut chart
-  const statusSm1Counts = rows.reduce(
-    (acc, row) => {
-      if (row.cek_sm1) {
-        if (row.status_sm1 === 'OPEN') acc.OPEN++;
-        else if (row.status_sm1 === 'PROGRESS') acc.PROGRESS++;
-        else if (row.status_sm1 === 'CLOSED') acc.CLOSED++;
-        else acc.UNDEFINED++;
-      }
-      return acc;
-    },
-    { OPEN: 0, PROGRESS: 0, CLOSED: 0, UNDEFINED: 0 }
-  );
-
-  const totalSm1 =
-    statusSm1Counts.OPEN +
-    statusSm1Counts.PROGRESS +
-    statusSm1Counts.CLOSED +
-    statusSm1Counts.UNDEFINED;
-
-  const percentClosedSm1 = (
-    (statusSm1Counts.CLOSED / (totalSm1 || 1)) *
-    100
-  ).toFixed(0);
-  ///////
-
-  // chart w302
-  // Hitung donut berdasarkan filteredRows, tetapi hanya untuk baris yang Cs1 truthy
-  const openCountCs1 = filteredRows.filter(
-    (r) => isChecked(r.cek_cs1) && getStatus(r.status_cs1) === 'OPEN'
-  ).length;
-
-  const progressCountCs1 = filteredRows.filter(
-    (r) => isChecked(r.cek_cs1) && getStatus(r.status_cs1) === 'PROGRESS'
-  ).length;
-
-  const closedCountCs1 = filteredRows.filter(
-    (r) => isChecked(r.cek_cs1) && getStatus(r.status_cs1) === 'CLOSED'
-  ).length;
-
-  // Total yang punya nilai cek_Cs1 (sesuai definisi isChecked)
-  const totalWithCekCs1 = filteredRows.filter((r) =>
-    isChecked(r.cek_cs1)
-  ).length;
-
-  // undefined = baris dengan cek_Cs1 true tetapi status_Cs1 bukan OPEN/PROGRESS/CLOSED
-  const undefinedCountCs1 = Math.max(
-    0,
-    totalWithCekCs1 - (openCountCs1 + progressCountCs1 + closedCountCs1)
-  );
-
-  // Data untuk donut chart — pakai warna yang sama seperti yang benar sebelumnya
-  const chartDataCs1 = [
-    { name: 'OPEN', value: openCountCs1, color: '#ef4444' }, // merah
-    { name: 'PROGRESS', value: progressCountCs1, color: '#facc15' }, // kuning
-    { name: 'CLOSED', value: closedCountCs1, color: '#22c55e' }, // hijau
-    { name: 'UNDEFINED', value: undefinedCountCs1, color: '#9ca3af' }, // abu
-  ];
-
-  // Persentase closed (1 desimal)
-  const closedPercentageCs1 =
-    totalWithCekCs1 > 0
-      ? ((closedCountCs1 / totalWithCekCs1) * 100).toFixed(1)
-      : '0';
-
-  // hitung data status_Cs1 donut chart
-  const statusCs1Counts = rows.reduce(
-    (acc, row) => {
-      if (row.cek_cs1) {
-        if (row.status_cs1 === 'OPEN') acc.OPEN++;
-        else if (row.status_cs1 === 'PROGRESS') acc.PROGRESS++;
-        else if (row.status_cs1 === 'CLOSED') acc.CLOSED++;
-        else acc.UNDEFINED++;
-      }
-      return acc;
-    },
-    { OPEN: 0, PROGRESS: 0, CLOSED: 0, UNDEFINED: 0 }
-  );
-
-  const totalCs1 =
-    statusCs1Counts.OPEN +
-    statusCs1Counts.PROGRESS +
-    statusCs1Counts.CLOSED +
-    statusCs1Counts.UNDEFINED;
-
-  const percentClosedCs1 = (
-    (statusCs1Counts.CLOSED / (totalCs1 || 1)) *
-    100
-  ).toFixed(0);
-  ////////
-
-  // chart w303
-  // Hitung donut berdasarkan filteredRows, tetapi hanya untuk baris yang Mw truthy
-  const openCountMw = filteredRows.filter(
-    (r) => isChecked(r.cek_mw) && getStatus(r.status_mw) === 'OPEN'
-  ).length;
-
-  const progressCountMw = filteredRows.filter(
-    (r) => isChecked(r.cek_mw) && getStatus(r.status_mw) === 'PROGRESS'
-  ).length;
-
-  const closedCountMw = filteredRows.filter(
-    (r) => isChecked(r.cek_mw) && getStatus(r.status_mw) === 'CLOSED'
-  ).length;
-
-  // Total yang punya nilai cek_Mw (sesuai definisi isChecked)
-  const totalWithCekMw = filteredRows.filter((r) => isChecked(r.cek_mw)).length;
-
-  // undefined = baris dengan cek_Mw true tetapi status_Mw bukan OPEN/PROGRESS/CLOSED
-  const undefinedCountMw = Math.max(
-    0,
-    totalWithCekMw - (openCountMw + progressCountMw + closedCountMw)
-  );
-
-  // Data untuk donut chart — pakai warna yang sama seperti yang benar sebelumnya
-  const chartDataMw = [
-    { name: 'OPEN', value: openCountMw, color: '#ef4444' }, // merah
-    { name: 'PROGRESS', value: progressCountMw, color: '#facc15' }, // kuning
-    { name: 'CLOSED', value: closedCountMw, color: '#22c55e' }, // hijau
-    { name: 'UNDEFINED', value: undefinedCountMw, color: '#9ca3af' }, // abu
-  ];
-
-  // Persentase closed (1 desimal)
-  const closedPercentageMw =
-    totalWithCekMw > 0
-      ? ((closedCountMw / totalWithCekMw) * 100).toFixed(1)
-      : '0';
-
-  // hitung data status donut chart
-  const statusMwCounts = rows.reduce(
-    (acc, row) => {
-      if (row.cek_mw) {
-        if (row.status_mw === 'OPEN') acc.OPEN++;
-        else if (row.status_mw === 'PROGRESS') acc.PROGRESS++;
-        else if (row.status_mw === 'CLOSED') acc.CLOSED++;
-        else acc.UNDEFINED++;
-      }
-      return acc;
-    },
-    { OPEN: 0, PROGRESS: 0, CLOSED: 0, UNDEFINED: 0 }
-  );
-
-  const totalMw =
-    statusMwCounts.OPEN +
-    statusMwCounts.PROGRESS +
-    statusMwCounts.CLOSED +
-    statusMwCounts.UNDEFINED;
-
-  const percentClosedMw = (
-    (statusMwCounts.CLOSED / (totalMw || 1)) *
-    100
-  ).toFixed(0);
-  ////////
-
-  //w304
-  // Hitung donut berdasarkan filteredRows, tetapi hanya untuk baris yang cek_sm4 truthy
-  const openCountSm4 = filteredRows.filter(
-    (r) => isChecked(r.cek_sm4) && getStatus(r.status_sm4) === 'OPEN'
-  ).length;
-
-  const progressCountSm4 = filteredRows.filter(
-    (r) => isChecked(r.cek_sm4) && getStatus(r.status_sm4) === 'PROGRESS'
-  ).length;
-
-  const closedCountSm4 = filteredRows.filter(
-    (r) => isChecked(r.cek_sm4) && getStatus(r.status_sm4) === 'CLOSED'
-  ).length;
-
-  // Total yang punya nilai cek_sm4 (sesuai definisi isChecked)
-  const totalWithCekSm4 = filteredRows.filter((r) =>
-    isChecked(r.cek_sm4)
-  ).length;
-
-  // undefined = baris dengan cek_sm4 true tetapi status_sm4 bukan OPEN/PROGRESS/CLOSED
-  const undefinedCountSm4 = Math.max(
-    0,
-    totalWithCekSm4 - (openCountSm4 + progressCountSm4 + closedCountSm4)
-  );
-
-  // Data untuk donut chart — pakai warna yang sama seperti yang benar sebelumnya
-  const chartDataSm4 = [
-    { name: 'OPEN', value: openCountSm4, color: '#ef4444' }, // merah
-    { name: 'PROGRESS', value: progressCountSm4, color: '#facc15' }, // kuning
-    { name: 'CLOSED', value: closedCountSm4, color: '#22c55e' }, // hijau
-    { name: 'UNDEFINED', value: undefinedCountSm4, color: '#9ca3af' }, // abu
-  ];
-
-  // Persentase closed (1 desimal)
-  const closedPercentageSm4 =
-    totalWithCekSm4 > 0
-      ? ((closedCountSm4 / totalWithCekSm4) * 100).toFixed(1)
-      : '0';
-
-  // hitung data status_sm4 donut chart
-  const statusSm4Counts = rows.reduce(
-    (acc, row) => {
-      if (row.cek_sm4) {
-        if (row.status_sm4 === 'OPEN') acc.OPEN++;
-        else if (row.status_sm4 === 'PROGRESS') acc.PROGRESS++;
-        else if (row.status_sm4 === 'CLOSED') acc.CLOSED++;
-        else acc.UNDEFINED++;
-      }
-      return acc;
-    },
-    { OPEN: 0, PROGRESS: 0, CLOSED: 0, UNDEFINED: 0 }
-  );
-
-  const totalSm4 =
-    statusSm4Counts.OPEN +
-    statusSm4Counts.PROGRESS +
-    statusSm4Counts.CLOSED +
-    statusSm4Counts.UNDEFINED;
-
-  const percentClosedSm4 = (
-    (statusSm4Counts.CLOSED / (totalSm4 || 1)) *
-    100
-  ).toFixed(0);
-  ///////
-
-  // chart w305
-  // Hitung donut berdasarkan filteredRows, tetapi hanya untuk baris yang Cs4 truthy
-  const openCountCs4 = filteredRows.filter(
-    (r) => isChecked(r.cek_cs4) && getStatus(r.status_cs4) === 'OPEN'
-  ).length;
-
-  const progressCountCs4 = filteredRows.filter(
-    (r) => isChecked(r.cek_cs4) && getStatus(r.status_cs4) === 'PROGRESS'
-  ).length;
-
-  const closedCountCs4 = filteredRows.filter(
-    (r) => isChecked(r.cek_cs4) && getStatus(r.status_cs4) === 'CLOSED'
-  ).length;
-
-  // Total yang punya nilai cek_Cs4 (sesuai definisi isChecked)
-  const totalWithCekCs4 = filteredRows.filter((r) =>
-    isChecked(r.cek_cs4)
-  ).length;
-
-  // undefined = baris dengan cek_Cs4 true tetapi status_Cs4 bukan OPEN/PROGRESS/CLOSED
-  const undefinedCountCs4 = Math.max(
-    0,
-    totalWithCekCs4 - (openCountCs4 + progressCountCs4 + closedCountCs4)
-  );
-
-  // Data untuk donut chart — pakai warna yang sama seperti yang benar sebelumnya
-  const chartDataCs4 = [
-    { name: 'OPEN', value: openCountCs4, color: '#ef4444' }, // merah
-    { name: 'PROGRESS', value: progressCountCs4, color: '#facc15' }, // kuning
-    { name: 'CLOSED', value: closedCountCs4, color: '#22c55e' }, // hijau
-    { name: 'UNDEFINED', value: undefinedCountCs4, color: '#9ca3af' }, // abu
-  ];
-
-  // Persentase closed (1 desimal)
-  const closedPercentageCs4 =
-    totalWithCekCs4 > 0
-      ? ((closedCountCs4 / totalWithCekCs4) * 100).toFixed(1)
-      : '0';
-
-  // hitung data status_Cs4 donut chart
-  const statusCs4Counts = rows.reduce(
-    (acc, row) => {
-      if (row.cek_cs4) {
-        if (row.status_cs4 === 'OPEN') acc.OPEN++;
-        else if (row.status_cs4 === 'PROGRESS') acc.PROGRESS++;
-        else if (row.status_cs4 === 'CLOSED') acc.CLOSED++;
-        else acc.UNDEFINED++;
-      }
-      return acc;
-    },
-    { OPEN: 0, PROGRESS: 0, CLOSED: 0, UNDEFINED: 0 }
-  );
-
-  const totalCs4 =
-    statusCs4Counts.OPEN +
-    statusCs4Counts.PROGRESS +
-    statusCs4Counts.CLOSED +
-    statusCs4Counts.UNDEFINED;
-
-  const percentClosedCs4 = (
-    (statusCs4Counts.CLOSED / (totalCs4 || 1)) *
-    100
-  ).toFixed(0);
-  ////////
 
   // Hitung jumlah masing-masing doc_status dari filteredRows
   const docStatusCounts = docStatusList.map((status) => ({
@@ -959,25 +628,6 @@ export default function BUSH4() {
   const totalRemark = remarkCounts.reduce((acc, d) => acc + d.value, 0);
 
   ///////
-
-  const chartData = [
-    { name: 'OPEN', value: statusSm1Counts.OPEN, color: '#ef4444' }, // merah
-    { name: 'PROGRESS', value: statusSm1Counts.PROGRESS, color: '#facc15' }, // kuning
-    { name: 'CLOSED', value: statusSm1Counts.CLOSED, color: '#22c55e' }, // hijau
-    { name: 'UNDEFINED', value: statusSm1Counts.UNDEFINED, color: '#9ca3af' }, // abu
-  ];
-
-  // kotak status job
-  const statusCounts = filteredRows.reduce(
-    (acc, row) => {
-      if (row.status_job === 'OPEN') acc.OPEN++;
-      if (row.status_job === 'PROGRESS') acc.PROGRESS++;
-      if (row.status_job === 'CLOSED') acc.CLOSED++;
-      return acc;
-    },
-    { OPEN: 0, PROGRESS: 0, CLOSED: 0 }
-  );
-  //
 
   /////////////
 
@@ -1043,13 +693,15 @@ export default function BUSH4() {
   };
   /////////////
   const rotableSummary = pnList.map((pn) => {
-    const rows = filteredRows.filter(
+    const rows = rawRows.filter(
       (r) =>
-        r.doc_type === 'PDS' && r.pn?.includes(pn.match) && r.archived === false
+        r.doc_type === 'PDS' && r.archived === false && r.pn?.includes(pn.match)
     );
 
     const remain = rows.filter((r) => r.location === 'OUTGOING').length;
-    const wip = rows.filter((r) => r.location === 'DEPLOYED').length;
+    const wip = rows.filter((r) =>
+      ['DEPLOYED', 'INCOMING'].includes(r.location)
+    ).length;
     const incoming = rows.filter((r) => r.location === 'INCOMING').length;
 
     // =========================
@@ -1101,198 +753,274 @@ export default function BUSH4() {
   };
 
   //status stoc
-  const getStockStatus = (remain, safety) => {
+  // status stock
+  const getStockStatus = (remain: number, safety: number) => {
+    // 1️⃣ jika benar-benar habis
+    if (remain === 0) {
+      return { label: 'NIL', color: 'text-red-600 bg-red-200' };
+    }
+
+    // 2️⃣ stok ada tapi di bawah safety
     if (remain < safety) {
       return { label: 'CRITICAL', color: 'text-yellow-600 bg-yellow-100' };
     }
+
+    // 3️⃣ stok aman
     return { label: 'SAFE', color: 'text-green-700 bg-green-100' };
   };
+
+  ////blok pn
+  const projectSummary = useMemo(() => {
+    if (!rawRows?.length) return [];
+
+    const uniqAcReg = Array.from(
+      new Set(rawRows.map((r) => r.ac_reg).filter(Boolean))
+    );
+
+    return uniqAcReg.map((acReg, index) => {
+      const rowsByAc = rawRows.filter((r) => r.ac_reg === acReg);
+
+      const open = rowsByAc.filter((r) => r.status_job === 'OPEN').length;
+      const progress = rowsByAc.filter(
+        (r) => r.status_job === 'PROGRESS'
+      ).length;
+      const closed = rowsByAc.filter((r) => r.status_job === 'CLOSED').length;
+
+      const totalOrder = open + progress + closed;
+
+      // ✅ RTS langsung dari VIEW (mntp_tcr_view)
+      const rts = rowsByAc[0]?.rts ?? '-';
+
+      return {
+        no: index + 1,
+        acReg,
+        open,
+        progress,
+        closed,
+        totalOrder,
+        rts,
+      };
+    });
+  }, [rawRows]);
 
   /////ini return
   return (
     <div className="bg-[#141414] w-full h-full">
       <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[280vh] overflow-hidden w-full rounded-lg ">
         {/* 📊 Status Summary dan Donut Chart */}
-        <div className="  md:flex-row gap-2 w-full items-start mb-3 rounded-md overflow-auto ">
-
-          
-
-          {/* TITLE */}
-          <div className=" items-center px-2 text-center  h-6">
-              <h3 className="text-white font-bold text-sm">
-                ROTABLE COMPONENT SUMMARY
-              </h3>
-            </div> 
-          {/* ROTABLE COMPONENT SUMMARY */}
-          <div className="flex flex-col rounded-[10px] shadow w-full overflow-auto ">
-            {/* HEADER TABLE */}
-            <div className="grid grid-cols-11 whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#00838f]">
-              <div className="border-r border-gray-400 py-2 border-r border-gray-300">
-                TYPE A/C
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                P/N
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                CATEGORY
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                DESCRIPTION
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                SHOP
+        <div className="flex gap-2 w-full items-start mb-3 overflow-hidden">
+          {/* ================= PROJECT SUMMARY (KIRI) ================= */}
+          <div className="w-[350px] flex-shrink-0 ">
+            <div className="rounded-lg bg-[#00838f] border border-gray-400 bg-white shadow">
+              <div className="bg-[#00838f] rounded-lg text-white text-sm font-bold text-center py-2">
+                PROJECT SUMMARY
               </div>
 
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                REMAIN STOCK
+              {/* HEADER */}
+              <div className="grid grid-cols-[30px_90px_1fr_1fr_1fr_1fr_2fr] text-xs font-bold text-white bg-[#607d8b] text-center">
+                <div>No</div>
+                <div>A/C</div>
+                <div>O</div>
+                <div>P</div>
+                <div>C</div>
+                <div>Total</div>
+                <div>RTS</div>
               </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                SAFETY STOCK
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                STATUS STOCK
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                WIP
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                INCOMING
-              </div>
-              <div className="py-2">NEXT FSB</div>
-            </div>
 
-            {/* ROWS */}
-            {rotableSummary.map((row) => (
-              <div key={row.label}>
-                {/* SUMMARY ROW */}
+              {/* ROWS */}
+              {projectSummary.map((row) => (
                 <div
-                  onClick={() => togglePn(row.label)}
-                  className="grid grid-cols-11 text-xs border-t bg-white cursor-pointer hover:bg-slate-200"
+                  key={row.acReg}
+                  className="grid grid-cols-[30px_90px_1fr_1fr_1fr_1fr_2fr] text-xs text-center border-t hover:bg-slate-100"
                 >
-                  {/* TYPE A/C */}
-                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                    {row.typeAc}
-                  </div>
-
-                  {/* PN */}
-                  <div className="border-r px-2 py-2 font-bold text-blue-600 text-center whitespace-normal break-words">
-                    {row.label}
-                  </div>
-
-                  {/* CATEGORY */}
-                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                    {row.category}
-                  </div>
-
-                  {/* DESCRIPTION */}
-                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                    {row.description}
-                  </div>
-
-                  {/* SHOP */}
-                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                    {row.shop}
-                  </div>
-
-                  {/* REMAIN */}
-                  <div
-                    className={`border-r px-2 py-2 font-bold text-center ${
-                      row.remain < row.safetyStock
-                        ? 'text-red-600'
-                        : 'text-blue-600'
-                    }`}
-                  >
-                    {row.remain} EA
-                  </div>
-
-                  {/* SAFETY */}
-                  <div className="border-r px-2 py-2 font-bold text-center">
-                    {row.safetyStock} EA
-                  </div>
-
-                  {/* STATUS */}
-                  {(() => {
-                    const status = getStockStatus(row.remain, row.safetyStock);
-                    return (
-                      <div
-                        className={`"border-r px-2 py-2 text-center font-bold whitespace-normal break-words ${status.color}`}
-                      >
-                        {status.label}
-                      </div>
-                    );
-                  })()}
-
-                  {/* WIP */}
-                  <div className="border-r px-2 py-2 font-bold text-center">
-                    {row.wip} EA
-                  </div>
-
-                  {/* INCOMING */}
-                  <div className="border-r px-2 py-2 font-bold text-center">
-                    {row.incoming} EA
-                  </div>
-
-                  {/* NEXT FSB */}
-                  <div className="flex flex-col items-center justify-center font-bold ">
-                    {row.nextFsbQty > 0 ? (
-                      <>
-                        <span>{row.nextFsbQty} EA</span>
-                        <span className="text-xs text-gray-700 ">
-                          {row.nextFsbDate}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-gray-400 text-center">-</span>
-                    )}
-                  </div>
+                  <div>{row.no}</div>
+                  <div className="font-bold">{row.acReg}</div>
+                  <div>{row.open}</div>
+                  <div>{row.progress}</div>
+                  <div>{row.closed}</div>
+                  <div className="font-bold">{row.totalOrder}</div>
+                  <div className="text-blue-600 font-bold">{row.rts}</div>
                 </div>
-                {/* COLLAPSE DETAIL */}
-                {expandedPn.includes(row.label) && (
-                  <div className="bg-gray-50 border-b px-2 py-2">
-                    <div className="bg-white border border-gray-500 rounded-md text-xs overflow-hidden">
-                      {/* HEADER */}
-                      <div className="grid grid-cols-12 bg-gray-500 font-bold text-white text-center px-2 whitespace-normal break-words">
-                        <div className="col-span-3 py-2">DETAIL ALL ITEM</div>
-                        <div className="col-span-1 py-2 "> STATUS ITEM</div>
-                        <div className="col-span-1  py-2">LOCATION</div>
-                        <div className="col-span-1 py-2">STATUS DOC</div>
-                        <div className="col-span-1  py-2">STATUS BDP</div>
-                        <div className="col-span-1  py-2">STATUS JOB</div>
-                        <div className="col-span-1  py-2">PLAN FSB</div>
-                        <div className="col-span-3 py-2">REMARK</div>
-                      </div>
+              ))}
+            </div>
+          </div>
 
-                      {/* ROWS */}
-                      {(() => {
-                        // 1️⃣ SORT: FSB (OUTGOING) dulu, lalu WIP
-                        const sortedRows = [...row.rows].sort((a, b) => {
-                          const getPriority = (loc) => {
-                            if (loc === 'OUTGOING') return 0; // FSB
-                            if (loc === 'DEPLOYED' || loc === 'INCOMING')
-                              return 1; // WIP
-                            return 2;
-                          };
+          {/* ROTABLE SUMMARY (kanan) */}
+
+          {/* ROTABLE COMPONENT SUMMARY */}
+          <div className="rounded-[10px] shadow w-full overflow-x-auto">
+            <div className="min-w-[1200px] flex flex-col">
+              {/* HEADER TABLE */}
+              <div className="grid grid-cols-11 min-w-[1200px]  whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#00838f]">
+                <div className="border-r border-gray-400 py-2 border-r border-gray-300">
+                  TYPE A/C
+                </div>
+                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                  P/N
+                </div>
+                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                  CATEGORY
+                </div>
+                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                  DESCRIPTION
+                </div>
+                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                  SHOP
+                </div>
+
+                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                  REMAIN STOCK
+                </div>
+                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                  SAFETY STOCK
+                </div>
+                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                  STATUS STOCK
+                </div>
+                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                  WIP
+                </div>
+                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                  INCOMING
+                </div>
+                <div className="py-2">NEXT FSB</div>
+              </div>
+
+              {/* ROWS */}
+              {rotableSummary.map((row) => (
+                <div key={row.label}>
+                  {/* SUMMARY ROW */}
+                  <div
+                    onClick={() => togglePn(row.label)}
+                    className="grid grid-cols-11 min-w-[1200px]  text-xs border-t bg-white cursor-pointer hover:bg-slate-200"
+                  >
+                    {/* TYPE A/C */}
+                    <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                      {row.typeAc}
+                    </div>
+
+                    {/* PN */}
+                    <div className="border-r px-2 py-2 font-bold text-blue-600 text-center whitespace-normal break-words">
+                      {row.label}
+                    </div>
+
+                    {/* CATEGORY */}
+                    <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                      {row.category}
+                    </div>
+
+                    {/* DESCRIPTION */}
+                    <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                      {row.description}
+                    </div>
+
+                    {/* SHOP */}
+                    <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                      {row.shop}
+                    </div>
+
+                    {/* REMAIN */}
+                    <div
+                      className={`border-r px-2 py-2 font-bold text-center ${
+                        row.remain < row.safetyStock
+                          ? 'text-red-600'
+                          : 'text-blue-600'
+                      }`}
+                    >
+                      {row.remain} EA
+                    </div>
+
+                    {/* SAFETY */}
+                    <div className="border-r px-2 py-2 font-bold text-center">
+                      {row.safetyStock} EA
+                    </div>
+
+                    {/* STATUS */}
+                    {(() => {
+                      const status = getStockStatus(
+                        row.remain,
+                        row.safetyStock
+                      );
+                      return (
+                        <div
+                          className={`"border-r px-2 py-2 text-center font-bold whitespace-normal break-words ${status.color}`}
+                        >
+                          {status.label}
+                        </div>
+                      );
+                    })()}
+
+                    {/* WIP */}
+                    <div className="border-r px-2 py-2 font-bold text-center">
+                      {row.wip} EA
+                    </div>
+
+                    {/* INCOMING */}
+                    <div className="border-r px-2 py-2 font-bold text-center">
+                      {row.incoming} EA
+                    </div>
+
+                    {/* NEXT FSB */}
+                    <div className="flex flex-col items-center justify-center font-bold ">
+                      {row.nextFsbQty > 0 ? (
+                        <>
+                          <span>{row.nextFsbQty} EA</span>
+                          <span className="text-xs text-gray-700 ">
+                            {row.nextFsbDate}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-gray-400 text-center">-</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* COLLAPSE DETAIL */}
+                  {expandedPn.includes(row.label) && (
+                    <div className="bg-gray-50 border-b px-2 py-2">
+                      <div className="bg-white border border-gray-500 rounded-md text-xs overflow-hidden">
+                        {/* HEADER */}
+                        <div className="grid grid-cols-12 bg-gray-500 font-bold text-white text-center px-2 whitespace-normal break-words">
+                          <div className="col-span-3 py-2">DETAIL ALL ITEM</div>
+                          <div className="col-span-1 py-2 "> STATUS ITEM</div>
+                          <div className="col-span-1  py-2">LOCATION</div>
+                          <div className="col-span-1 py-2">STATUS DOC</div>
+                          <div className="col-span-1  py-2">STATUS BDP</div>
+                          <div className="col-span-1  py-2">STATUS JOB</div>
+                          <div className="col-span-1  py-2">PLAN FSB</div>
+                          <div className="col-span-3 py-2">REMARK</div>
+                        </div>
+
+                        {/* ROWS */}
+                        {(() => {
+                          // 1️⃣ SORT: FSB (OUTGOING) dulu, lalu WIP
+                          const sortedRows = [...row.rows].sort((a, b) => {
+                            const getPriority = (loc) => {
+                              if (loc === 'OUTGOING') return 0; // FSB
+                              if (loc === 'DEPLOYED' || loc === 'INCOMING')
+                                return 1; // WIP
+                              return 2;
+                            };
+                            return (
+                              getPriority(a.location) - getPriority(b.location)
+                            );
+                          });
+
                           return (
-                            getPriority(a.location) - getPriority(b.location)
-                          );
-                        });
+                            <ul className="divide-y divide-gray-300 bg-slate-50">
+                              {sortedRows.map((r) => {
+                                // 2️⃣ STATUS COMP
+                                const statusComp =
+                                  r.location === 'OUTGOING'
+                                    ? 'FSB'
+                                    : r.location === 'INCOMING' ||
+                                      r.location === 'DEPLOYED'
+                                    ? 'WIP'
+                                    : '-';
 
-                        return (
-                          <ul className="divide-y divide-gray-300 bg-slate-50">
-                            {sortedRows.map((r) => {
-                              // 2️⃣ STATUS COMP
-                              const statusComp =
-                                r.location === 'OUTGOING'
-                                  ? 'FSB'
-                                  : r.location === 'INCOMING' ||
-                                    r.location === 'DEPLOYED'
-                                  ? 'WIP'
-                                  : '-';
-
-                              return (
-                                <li
-                                  key={r.id}
-                                  className="
+                                return (
+                                  <li
+                                    key={r.id}
+                                    className="
               grid grid-cols-12
               px-2 py-2
               text-[11px]
@@ -1301,22 +1029,22 @@ export default function BUSH4() {
               hover:bg-slate-200
               transition-colors
             "
-                                >
-                                  {/* IDENTIFICATION */}
-                                  <div className="col-span-3 flex flex-col gap-0.5">
-                                    <span className="font-bold text-blue-600 flex flex-wrap gap-1">
-                                      {r.ac_reg || '-'} • {r.order || '-'} •{' '}
-                                      {r.pn || '-'} • {r.sn || '-'}
-                                    </span>
-                                    <span className="text-gray-700 whitespace-normal break-words">
-                                      {r.description || '-'}
-                                    </span>
-                                  </div>
+                                  >
+                                    {/* IDENTIFICATION */}
+                                    <div className="col-span-3 flex flex-col gap-0.5">
+                                      <span className="font-bold text-blue-600 flex flex-wrap gap-1">
+                                        {r.ac_reg || '-'} • {r.order || '-'} •{' '}
+                                        {r.pn || '-'} • {r.sn || '-'}
+                                      </span>
+                                      <span className="text-gray-700 whitespace-normal break-words">
+                                        {r.description || '-'}
+                                      </span>
+                                    </div>
 
-                                  {/* STATUS COMP (DIPINDAH KE DEPAN LOCATION) */}
-                                  <div className="col-span-1 flex items-center justify-center font-bold">
-                                    <span
-                                      className={`px-2 py-0.5 rounded-full text-white
+                                    {/* STATUS COMP (DIPINDAH KE DEPAN LOCATION) */}
+                                    <div className="col-span-1 flex items-center justify-center font-bold">
+                                      <span
+                                        className={`px-2 py-0.5 rounded-full text-white
                   ${
                     statusComp === 'FSB'
                       ? 'bg-green-600'
@@ -1324,77 +1052,78 @@ export default function BUSH4() {
                       ? 'bg-yellow-500'
                       : 'bg-gray-400'
                   }`}
-                                    >
-                                      {statusComp}
-                                    </span>
-                                  </div>
+                                      >
+                                        {statusComp}
+                                      </span>
+                                    </div>
 
-                                  {/* LOCATION */}
-                                  <div className="col-span-1 flex items-center justify-center font-bold">
-                                    <span
-                                      className={`${
-                                        r.location === 'OUTGOING'
-                                          ? 'text-green-700'
-                                          : r.location === 'INCOMING'
-                                          ? 'text-yellow-700'
-                                          : 'text-blue-700'
-                                      }`}
-                                    >
-                                      {r.location || '-'}
-                                    </span>
-                                  </div>
+                                    {/* LOCATION */}
+                                    <div className="col-span-1 flex items-center justify-center font-bold">
+                                      <span
+                                        className={`${
+                                          r.location === 'OUTGOING'
+                                            ? 'text-green-700'
+                                            : r.location === 'INCOMING'
+                                            ? 'text-yellow-700'
+                                            : 'text-blue-700'
+                                        }`}
+                                      >
+                                        {r.location || '-'}
+                                      </span>
+                                    </div>
 
-                                  {/* DOC STATUS */}
-                                  <div className="col-span-1 flex items-center justify-center font-bold">
-                                    <span
-                                      className={`${
-                                        r.doc_status === 'OPEN'
-                                          ? 'text-red-600'
-                                          : r.doc_status === 'PROGRESS'
-                                          ? 'text-yellow-600'
-                                          : r.doc_status === 'CLOSED'
-                                          ? 'text-green-600'
-                                          : 'text-gray-600'
-                                      }`}
-                                    >
-                                      {r.doc_status || '-'}
-                                    </span>
-                                  </div>
+                                    {/* DOC STATUS */}
+                                    <div className="col-span-1 flex items-center justify-center font-bold">
+                                      <span
+                                        className={`${
+                                          r.doc_status === 'OPEN'
+                                            ? 'text-red-600'
+                                            : r.doc_status === 'PROGRESS'
+                                            ? 'text-yellow-600'
+                                            : r.doc_status === 'CLOSED'
+                                            ? 'text-green-600'
+                                            : 'text-gray-600'
+                                        }`}
+                                      >
+                                        {r.doc_status || '-'}
+                                      </span>
+                                    </div>
 
-                                  {/* STATUS MAT */}
-                                  <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
-                                    {r.remark_mat || '-'}
-                                  </div>
+                                    {/* STATUS MAT */}
+                                    <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
+                                      {r.remark_mat || '-'}
+                                    </div>
 
-                                  {/* STATUS JOB */}
-                                  <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
-                                    {r.status_job || '-'}
-                                  </div>
+                                    {/* STATUS JOB */}
+                                    <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
+                                      {r.status_job || '-'}
+                                    </div>
 
-                                  {/* EST FINISH */}
-                                  <div className="col-span-1 flex items-center justify-center whitespace-normal break-words">
-                                    {r.est_date
-                                      ? formatDateToDDMMMYYYY(
-                                          new Date(r.est_date)
-                                        )
-                                      : '-'}
-                                  </div>
+                                    {/* EST FINISH */}
+                                    <div className="col-span-1 flex items-center justify-center whitespace-normal break-words">
+                                      {r.est_date
+                                        ? formatDateToDDMMMYYYY(
+                                            new Date(r.est_date)
+                                          )
+                                        : '-'}
+                                    </div>
 
-                                  {/* REMARK */}
-                                  <div className="col-span-3 whitespace-normal break-words text-center">
-                                    {r.remark || '-'}
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        );
-                      })()}
+                                    {/* REMARK */}
+                                    <div className="col-span-3 whitespace-normal break-words text-center">
+                                      {r.remark || '-'}
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          );
+                        })()}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -1682,13 +1411,14 @@ export default function BUSH4() {
 
                 {/* DOC TYPE */}
                 <th className=" px-2 py-1 text-center w-[90px]">Doc Type</th>
+                <th className=" px-2 py-1 text-center w-[90px]">A/C Reg</th>
                 {/* IDENTIFICATION */}
                 <th className="px-2 py-1 text-left min-w-[300px]">
                   IDENTIFICATION
                 </th>
 
                 {/* KOLOM LAIN */}
-                <th className="px-1 py-1">LOCATION</th>
+                <th className="px-1 py-1">POSITION</th>
                 <th className="px-1 py-1 min-w-[90px]">DATE IN</th>
                 <th className="px-1 py-1  min-w-[100px]">DOC STATUS</th>
                 <th className="px-1 py-1">PRIORITY</th>
@@ -1734,24 +1464,25 @@ export default function BUSH4() {
                   <td className="border px-2 py-1 text-center text-[11px] font-semibold">
                     {row.doc_type || ''}
                   </td>
+
+                  <td className="border px-2 py-1 text-center text-[11px] font-semibold">
+                    {row.ac_reg || ''}
+                  </td>
+
                   {/* 🔷 IDENTIFICATION (GABUNGAN) */}
                   {/* IDENTIFICATION */}
                   <td className="border px-2 py-1 text-left align-top">
                     <div className="flex flex-col gap-0.5">
                       {/* BARIS 1 */}
                       {(() => {
-                        const idLine = [
-                          row.ac_reg,
-                          row.type_ac,
-                          row.order,
-                          row.pn,
-                          row.sn,
-                        ].filter(Boolean);
+                        const idLine = [row.order, row.pn, row.sn].filter(
+                          Boolean
+                        );
 
                         return (
                           idLine.length > 0 && (
                             <span className="font-bold text-blue-600">
-                              {idLine.join(' - ')}
+                              {idLine.join(' || ')}
                             </span>
                           )
                         );
@@ -1766,14 +1497,16 @@ export default function BUSH4() {
 
                       {/* BARIS 3 */}
                       {(() => {
-                        const metaLine = [row.category, row.shop].filter(
-                          Boolean
-                        );
+                        const metaLine = [
+                          row.type_ac,
+                          row.category,
+                          row.shop,
+                        ].filter(Boolean);
 
                         return (
                           metaLine.length > 0 && (
                             <span className="text-[10px] text-gray-500">
-                              {metaLine.join(' - ')}
+                              {metaLine.join(' || ')}
                             </span>
                           )
                         );
