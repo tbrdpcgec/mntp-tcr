@@ -198,7 +198,7 @@ const REMARK_OPTIONS: string[] = [
   'HOLD',
 ];
 
-const HANDLE_BY_OPTIONS: string[] = ['DODIK', 'ANJAR', 'ARROFI'];
+const HANDLE_BY_OPTIONS: string[] = ['NAME'];
 
 export default function W304() {
   const [rows, setRows] = useState<any[]>([]);
@@ -904,7 +904,7 @@ export default function W304() {
                           }
                           className="form-checkbox h-4 w-4 text-blue-600"
                         />
-                      ) : key === 'status_cs1' ? (
+                      ) : key === 'status_sm4' ? (
                         <CustomSelect
                           value={row[key] || ''}
                           onChange={(e) =>
