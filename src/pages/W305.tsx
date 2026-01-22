@@ -425,7 +425,7 @@ export default function W305() {
       year: 'numeric',
     });
 
-    const header = `*DAILY WORKLOAD REPORT*\n*MACHINING & WELDING*\nTCR-5 | ${shiftType}\n${today}`;
+    const header = `*DAILY WORKLOAD REPORT*\n*CABIN SHOP*\nTCR-5 | ${shiftType}\n${today}`;
     const summary = `\n\n*TOTAL : ${totalOrder} ORDER*\n${totalOpen} OPEN | ${totalProgress} PROGRESS | ${totalClosed} CLOSED`;
 
     const detail = orders
