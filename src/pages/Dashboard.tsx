@@ -5,7 +5,7 @@ import CustomSelect from '../components/CustomSelect';
 
 import { PieChart, Pie, Cell, Tooltip, Legend, Label } from 'recharts';
 
-const LOCATIONS = ['AWAITING', 'INCOMING', 'DEPLOYED', 'OUTGOING', 'RELEASE'];
+const LOCATIONS = ['AWAITING', 'INCOMING', 'WIP', 'FSB', 'RELEASE'];
 const DOC_TYPES = ['DN', 'JC', 'MDR', 'PDS'];
 const PLNTWKCNTR = ['CGK', 'GAH1', 'GAH2', 'GAH3', 'GAH4', 'WSSR', 'WSST'];
 
@@ -58,7 +58,7 @@ const docStatusColors = [
 ];
 
 const columnWidths: Record<string, string> = {
-  ac_reg: 'min-w-[70px]',
+  ac_reg: 'min-w-[200px]',
   description: 'min-w-[350px]',
   order: 'min-w-[70px]',
   location: 'min-w-[00px]',
@@ -201,7 +201,7 @@ const sortOptions = [
   { value: 'order', label: 'Order' },
   { value: 'description', label: 'Description' },
   { value: 'location', label: 'Location' },
-  { value: 'doc_type', label: 'Doc Type' },
+  { value: 'doc_type', label: 'Doc' },
   { value: 'date_in', label: 'Date In' },
   { value: 'doc_status', label: 'Doc Status' },
   { value: 'plntwkcntr', label: 'Plntwkcntr' },
@@ -215,12 +215,15 @@ type OrderFilter = {
 export default function BUSH4() {
   const [rows, setRows] = useState<Row[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterAcReg, setFilterAcReg] = useState('');
+  const [filterAcRegs, setFilterAcRegs] = useState<string[]>([]);
+  const [filterAcInput, setFilterAcInput] = useState('');
+
   const [filterOrder, setFilterOrder] = useState('');
   const [filterDocStatus, setFilterDocStatus] = useState('');
   const [filterStatusJob, setFilterStatusJob] = useState('');
   const [filterBase, setFilterBase] = useState('');
   const [filterPriority, setFilterPriority] = useState('All');
+  const [filterLocation, setFilterLocation] = useState('');
 
   const [priorityData, setPriorityData] = useState<any[]>([]);
   const [filterW, setFilterW] = useState('');
@@ -246,8 +249,9 @@ export default function BUSH4() {
 
   // filter ac reg
   const [showSuggestions, setShowSuggestions] = useState(false);
-
-  const [filterOrders, setFilterOrders] = useState<string[]>([]);
+  const [filterOrders, setFilterOrders] = useState<
+    { value: string; valid: boolean }[]
+  >([]);
   const [orderInput, setOrderInput] = useState('');
   const [orderSuggestions, setOrderSuggestions] = useState<string[]>([]);
   const [activeRow, setActiveRow] = useState(null);
@@ -269,6 +273,23 @@ export default function BUSH4() {
 
     setOrderSuggestions(filtered.slice(0, 10)); // batasi max 10
   }, [orderInput, rows]);
+
+  // 🔹 🔥 RESET PAGE SAAT FILTER BERUBAH (INI WAJIB)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    filterAcRegs,
+    filterOrders,
+    filterPriority,
+    filterDocStatus,
+    filterStatusJob,
+    filterW,
+    searchTerm,
+  ]);
+
+  useEffect(() => {
+    setSearchTerm('');
+  }, [filterAcRegs]);
 
   const handleAddOrder = (order: string) => {
     const normalized = String(order).trim();
@@ -296,8 +317,9 @@ export default function BUSH4() {
 
   // Filter opsi berdasarkan input
   const filteredOptions = uniqueAcRegs.filter((reg) =>
-    reg.toLowerCase().includes(filterAcReg.toLowerCase())
+    reg.toLowerCase().includes(filterAcInput.toLowerCase())
   );
+
   //////
 
   const confirmAction = (action: () => void) => {
@@ -414,6 +436,13 @@ export default function BUSH4() {
     field: string;
   } | null>(null);
 
+  const STATUS_JOB_ORDER: Record<string, number> = {
+    open: 1,
+    progress: 2,
+    closed: 3,
+  };
+
+  //ini use
   useEffect(() => {
     const fetchData = async () => {
       let allRows: any[] = [];
@@ -423,7 +452,7 @@ export default function BUSH4() {
 
       while (moreData) {
         const { data, error } = await supabase
-          .from('v_project_with_rts')
+          .from('v_project_with_rts_unique')
           .select('*')
           .eq('archived', false)
           .order('date_in', { ascending: false })
@@ -450,16 +479,51 @@ export default function BUSH4() {
       // 🔽 Tambahan: filter hanya priority "High"
       const highPriority = allRows
         .filter((row) => row.priority === 'High')
-        .sort(
-          (a, b) =>
-            new Date(b.date_in).getTime() - new Date(a.date_in).getTime()
-        );
+        .sort((a, b) => {
+          const today = new Date().setHours(0, 0, 0, 0);
+          const aRts = a.rts ? new Date(a.rts).setHours(0, 0, 0, 0) : null;
+          const bRts = b.rts ? new Date(b.rts).setHours(0, 0, 0, 0) : null;
+
+          // 1️⃣ RTS kosong → paling bawah
+          if (!aRts && !bRts) {
+            /* lanjut ke status_job */
+          } else if (!aRts) return 1;
+          else if (!bRts) return -1;
+          else {
+            const diffA = aRts - today;
+            const diffB = bRts - today;
+
+            const aExpired = diffA < 0;
+            const bExpired = diffB < 0;
+
+            // 2️⃣ RTS expired → paling bawah
+            if (aExpired !== bExpired) return aExpired ? 1 : -1;
+
+            // 3️⃣ RTS valid → urut terdekat
+            if (diffA !== diffB) return diffA - diffB;
+          }
+
+          // 4️⃣ Status job fallback → Open → Progress → Closed
+          const statusA = STATUS_JOB_ORDER[a.status_job.toLowerCase()] ?? 99;
+          const statusB = STATUS_JOB_ORDER[b.status_job.toLowerCase()] ?? 99;
+          return statusA - statusB;
+        });
 
       setPriorityData(highPriority);
     };
 
     fetchData();
   }, []);
+
+  ///rev2 rts urut
+
+  const getRtsDistance = (rts?: string) => {
+    if (!rts) return Number.MAX_SAFE_INTEGER;
+    const today = new Date();
+    return Math.abs(new Date(rts).getTime() - today.getTime());
+  };
+
+  console.log('filterAcRegs:', filterAcRegs);
 
   /////row raw
   const rawRows = rows;
@@ -485,13 +549,23 @@ export default function BUSH4() {
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
 
-      const matchesAcReg = filterAcReg === '' || row.ac_reg === filterAcReg;
+      const matchesAcReg =
+        filterAcRegs.length === 0 || filterAcRegs.includes(row.ac_reg);
+
       const matchesPriority =
         filterPriority === 'All' ? true : row.priority === filterPriority;
       const matchesDocStatus =
         filterDocStatus === '' || row.doc_status === filterDocStatus;
       const matchesStatusJob =
-        filterStatusJob === '' || row.status_job === filterStatusJob;
+        filterStatusJob === ''
+          ? true
+          : filterStatusJob === 'OPEN_PROGRESS'
+          ? ['OPEN', 'PROGRESS'].includes((row.status_job || '').toUpperCase())
+          : (row.status_job || '').toUpperCase() === filterStatusJob;
+      const matchesLocation =
+        filterLocation === ''
+          ? true
+          : (row.location || '').toLowerCase() === filterLocation;
 
       // ✅ tambahan filter untuk W301–W305
       const matchesW =
@@ -519,13 +593,46 @@ export default function BUSH4() {
         matchesStatusJob &&
         matchesW &&
         matchesPriority &&
-        matchesPn
+        matchesPn &&
+        matchesLocation
       );
     })
 
     .sort((a, b) => {
-      if (!sortKey) return 0;
+      if (!sortKey) {
+        const today = new Date().setHours(0, 0, 0, 0);
+        const aRts = a.rts ? new Date(a.rts).setHours(0, 0, 0, 0) : null;
+        const bRts = b.rts ? new Date(b.rts).setHours(0, 0, 0, 0) : null;
 
+        // 1️⃣ RTS kosong → paling bawah
+        if (!aRts && !bRts) {
+          // lanjut ke status_job
+        } else if (!aRts) {
+          return 1;
+        } else if (!bRts) {
+          return -1;
+        } else {
+          const diffA = aRts - today;
+          const diffB = bRts - today;
+
+          const aExpired = diffA < 0;
+          const bExpired = diffB < 0;
+
+          // 2️⃣ RTS expired → paling bawah
+          if (aExpired !== bExpired) return aExpired ? 1 : -1;
+
+          // 3️⃣ RTS valid → urut terdekat
+          if (diffA !== diffB) return diffA - diffB;
+        }
+
+        // 4️⃣ STATUS_JOB selalu sebagai fallback
+        const statusA = STATUS_JOB_ORDER[a.status_job.toLowerCase()] ?? 99;
+        const statusB = STATUS_JOB_ORDER[b.status_job.toLowerCase()] ?? 99;
+
+        return statusA - statusB;
+      }
+
+      // USER SORT
       const aVal = a[sortKey] ?? '';
       const bVal = b[sortKey] ?? '';
 
@@ -584,6 +691,7 @@ export default function BUSH4() {
   );
 
   ///////////////
+
   ///////////////////
   const ALLOWED_REMARKS = [
     'WAITING REMOVE',
@@ -803,224 +911,220 @@ export default function BUSH4() {
     });
   }, [rawRows]);
 
+  ////remaindays
+  const getRemainDays = (dateStr: string) => {
+    if (!dateStr) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const rtsDate = new Date(dateStr);
+    if (isNaN(rtsDate.getTime())) return null;
+
+    rtsDate.setHours(0, 0, 0, 0);
+
+    const diffTime = rtsDate.getTime() - today.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  ////filter ac
+
+  const acRegSuggestions = useMemo(() => {
+    return Array.from(new Set(rows.map((r) => r.ac_reg).filter(Boolean)));
+  }, [rows]);
+
+  ////  sortir ac reg
+  const sortedProjectSummary = [...projectSummary].sort((a, b) => {
+    const ra = getRemainDays(a.rts);
+    const rb = getRemainDays(b.rts);
+
+    // null → paling bawah
+    if (ra === null && rb === null) return 0;
+    if (ra === null) return 1;
+    if (rb === null) return -1;
+
+    // overdue (<= -1) → paling bawah
+    if (ra <= -1 && rb <= -1) return 0;
+    if (ra <= -1) return 1;
+    if (rb <= -1) return -1;
+
+    // sisanya (0,1,2,...) urut naik
+    return ra - rb;
+  });
+
   /////ini return
   return (
     <div className="bg-[#141414] w-full h-full">
-      <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[280vh] overflow-hidden w-full rounded-lg ">
-        {/* 📊 Status Summary dan Donut Chart */}
-        <div className="flex gap-2 w-full items-start mb-3 overflow-hidden">
-          {/* ================= PROJECT SUMMARY (KIRI) ================= */}
-          <div className="w-[350px] flex-shrink-0 ">
-            <div className="rounded-lg bg-[#00838f] border border-gray-400 bg-white shadow">
-              <div className="bg-[#00838f] rounded-lg text-white text-sm font-bold text-center py-2">
-                PROJECT SUMMARY
+      <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[310vh] overflow-hidden w-full rounded-lg ">
+        {/* ROTABLE COMPONENT SUMMARY */}
+        <div className="rounded-[10px] shadow w-full overflow-x-auto mb-2">
+          <div className="min-w-[1200px] flex flex-col">
+            {/* HEADER TABLE */}
+            <div className="grid grid-cols-11 min-w-[1200px]  whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#00838f]">
+              <div className="border-r border-gray-400 py-2 border-r border-gray-300">
+                TYPE A/C
+              </div>
+              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                P/N
+              </div>
+              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                CATEGORY
+              </div>
+              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                DESCRIPTION
+              </div>
+              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                SHOP
               </div>
 
-              {/* HEADER */}
-              <div className="grid grid-cols-[30px_90px_1fr_1fr_1fr_1fr_2fr] text-xs font-bold text-white bg-[#607d8b] text-center">
-                <div>No</div>
-                <div>A/C</div>
-                <div>O</div>
-                <div>P</div>
-                <div>C</div>
-                <div>Total</div>
-                <div>RTS</div>
+              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                REMAIN STOCK
               </div>
-
-              {/* ROWS */}
-              {projectSummary.map((row) => (
-                <div
-                  key={row.acReg}
-                  className="grid grid-cols-[30px_90px_1fr_1fr_1fr_1fr_2fr] text-xs text-center border-t hover:bg-slate-100"
-                >
-                  <div>{row.no}</div>
-                  <div className="font-bold">{row.acReg}</div>
-                  <div>{row.open}</div>
-                  <div>{row.progress}</div>
-                  <div>{row.closed}</div>
-                  <div className="font-bold">{row.totalOrder}</div>
-                  <div className="text-blue-600 font-bold">{row.rts}</div>
-                </div>
-              ))}
+              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                SAFETY STOCK
+              </div>
+              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                STATUS STOCK
+              </div>
+              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                WIP
+              </div>
+              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                INCOMING
+              </div>
+              <div className="py-2">NEXT FSB</div>
             </div>
-          </div>
 
-          {/* ROTABLE SUMMARY (kanan) */}
-
-          {/* ROTABLE COMPONENT SUMMARY */}
-          <div className="rounded-[10px] shadow w-full overflow-x-auto">
-            <div className="min-w-[1200px] flex flex-col">
-              {/* HEADER TABLE */}
-              <div className="grid grid-cols-11 min-w-[1200px]  whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#00838f]">
-                <div className="border-r border-gray-400 py-2 border-r border-gray-300">
-                  TYPE A/C
-                </div>
-                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                  P/N
-                </div>
-                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                  CATEGORY
-                </div>
-                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                  DESCRIPTION
-                </div>
-                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                  SHOP
-                </div>
-
-                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                  REMAIN STOCK
-                </div>
-                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                  SAFETY STOCK
-                </div>
-                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                  STATUS STOCK
-                </div>
-                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                  WIP
-                </div>
-                <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                  INCOMING
-                </div>
-                <div className="py-2">NEXT FSB</div>
-              </div>
-
-              {/* ROWS */}
-              {rotableSummary.map((row) => (
-                <div key={row.label}>
-                  {/* SUMMARY ROW */}
-                  <div
-                    onClick={() => togglePn(row.label)}
-                    className="grid grid-cols-11 min-w-[1200px]  text-xs border-t bg-white cursor-pointer hover:bg-slate-200"
-                  >
-                    {/* TYPE A/C */}
-                    <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                      {row.typeAc}
-                    </div>
-
-                    {/* PN */}
-                    <div className="border-r px-2 py-2 font-bold text-blue-600 text-center whitespace-normal break-words">
-                      {row.label}
-                    </div>
-
-                    {/* CATEGORY */}
-                    <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                      {row.category}
-                    </div>
-
-                    {/* DESCRIPTION */}
-                    <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                      {row.description}
-                    </div>
-
-                    {/* SHOP */}
-                    <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                      {row.shop}
-                    </div>
-
-                    {/* REMAIN */}
-                    <div
-                      className={`border-r px-2 py-2 font-bold text-center ${
-                        row.remain < row.safetyStock
-                          ? 'text-red-600'
-                          : 'text-blue-600'
-                      }`}
-                    >
-                      {row.remain} EA
-                    </div>
-
-                    {/* SAFETY */}
-                    <div className="border-r px-2 py-2 font-bold text-center">
-                      {row.safetyStock} EA
-                    </div>
-
-                    {/* STATUS */}
-                    {(() => {
-                      const status = getStockStatus(
-                        row.remain,
-                        row.safetyStock
-                      );
-                      return (
-                        <div
-                          className={`"border-r px-2 py-2 text-center font-bold whitespace-normal break-words ${status.color}`}
-                        >
-                          {status.label}
-                        </div>
-                      );
-                    })()}
-
-                    {/* WIP */}
-                    <div className="border-r px-2 py-2 font-bold text-center">
-                      {row.wip} EA
-                    </div>
-
-                    {/* INCOMING */}
-                    <div className="border-r px-2 py-2 font-bold text-center">
-                      {row.incoming} EA
-                    </div>
-
-                    {/* NEXT FSB */}
-                    <div className="flex flex-col items-center justify-center font-bold ">
-                      {row.nextFsbQty > 0 ? (
-                        <>
-                          <span>{row.nextFsbQty} EA</span>
-                          <span className="text-xs text-gray-700 ">
-                            {row.nextFsbDate}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-gray-400 text-center">-</span>
-                      )}
-                    </div>
+            {/* ROWS */}
+            {rotableSummary.map((row) => (
+              <div key={row.label}>
+                {/* SUMMARY ROW */}
+                <div
+                  onClick={() => togglePn(row.label)}
+                  className="grid grid-cols-11 min-w-[1200px]  text-xs border-t bg-white cursor-pointer hover:bg-slate-200"
+                >
+                  {/* TYPE A/C */}
+                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                    {row.typeAc}
                   </div>
-                  {/* COLLAPSE DETAIL */}
-                  {expandedPn.includes(row.label) && (
-                    <div className="bg-gray-50 border-b px-2 py-2">
-                      <div className="bg-white border border-gray-500 rounded-md text-xs overflow-hidden">
-                        {/* HEADER */}
-                        <div className="grid grid-cols-12 bg-gray-500 font-bold text-white text-center px-2 whitespace-normal break-words">
-                          <div className="col-span-3 py-2">DETAIL ALL ITEM</div>
-                          <div className="col-span-1 py-2 "> STATUS ITEM</div>
-                          <div className="col-span-1  py-2">LOCATION</div>
-                          <div className="col-span-1 py-2">STATUS DOC</div>
-                          <div className="col-span-1  py-2">STATUS BDP</div>
-                          <div className="col-span-1  py-2">STATUS JOB</div>
-                          <div className="col-span-1  py-2">PLAN FSB</div>
-                          <div className="col-span-3 py-2">REMARK</div>
-                        </div>
 
-                        {/* ROWS */}
-                        {(() => {
-                          // 1️⃣ SORT: FSB (OUTGOING) dulu, lalu WIP
-                          const sortedRows = [...row.rows].sort((a, b) => {
-                            const getPriority = (loc) => {
-                              if (loc === 'OUTGOING') return 0; // FSB
-                              if (loc === 'DEPLOYED' || loc === 'INCOMING')
-                                return 1; // WIP
-                              return 2;
-                            };
-                            return (
-                              getPriority(a.location) - getPriority(b.location)
-                            );
-                          });
+                  {/* PN */}
+                  <div className="border-r px-2 py-2 font-bold text-blue-600 text-center whitespace-normal break-words">
+                    {row.label}
+                  </div>
 
+                  {/* CATEGORY */}
+                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                    {row.category}
+                  </div>
+
+                  {/* DESCRIPTION */}
+                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                    {row.description}
+                  </div>
+
+                  {/* SHOP */}
+                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                    {row.shop}
+                  </div>
+
+                  {/* REMAIN */}
+                  <div
+                    className={`border-r px-2 py-2 font-bold text-center ${
+                      row.remain < row.safetyStock
+                        ? 'text-red-600'
+                        : 'text-blue-600'
+                    }`}
+                  >
+                    {row.remain} EA
+                  </div>
+
+                  {/* SAFETY */}
+                  <div className="border-r px-2 py-2 font-bold text-center">
+                    {row.safetyStock} EA
+                  </div>
+
+                  {/* STATUS */}
+                  {(() => {
+                    const status = getStockStatus(row.remain, row.safetyStock);
+                    return (
+                      <div
+                        className={`"border-r px-2 py-2 text-center font-bold whitespace-normal break-words ${status.color}`}
+                      >
+                        {status.label}
+                      </div>
+                    );
+                  })()}
+
+                  {/* WIP */}
+                  <div className="border-r px-2 py-2 font-bold text-center">
+                    {row.wip} EA
+                  </div>
+
+                  {/* INCOMING */}
+                  <div className="border-r px-2 py-2 font-bold text-center">
+                    {row.incoming} EA
+                  </div>
+
+                  {/* NEXT FSB */}
+                  <div className="flex flex-col items-center justify-center font-bold ">
+                    {row.nextFsbQty > 0 ? (
+                      <>
+                        <span>{row.nextFsbQty} EA</span>
+                        <span className="text-xs text-gray-700 ">
+                          {row.nextFsbDate}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400 text-center">-</span>
+                    )}
+                  </div>
+                </div>
+                {/* COLLAPSE DETAIL */}
+                {expandedPn.includes(row.label) && (
+                  <div className="bg-gray-50 border-b px-2 py-2">
+                    <div className="bg-white border border-gray-500 rounded-md text-xs overflow-hidden">
+                      {/* HEADER */}
+                      <div className="grid grid-cols-12 bg-gray-500 font-bold text-white text-center px-2 whitespace-normal break-words">
+                        <div className="col-span-3 py-2">DETAIL ALL ITEM</div>
+                        <div className="col-span-1  py-2">STATUS ITEM</div>
+                        <div className="col-span-1 py-2">STATUS DOC</div>
+                        <div className="col-span-1  py-2">STATUS BDP</div>
+                        <div className="col-span-1  py-2">STATUS JOB</div>
+                        <div className="col-span-1  py-2">PLAN FSB</div>
+                        <div className="col-span-3 py-2">REMARK</div>
+                      </div>
+
+                      {/* ROWS */}
+                      {(() => {
+                        // 1️⃣ SORT: FSB (OUTGOING) dulu, lalu WIP
+                        const sortedRows = [...row.rows].sort((a, b) => {
+                          const getPriority = (loc) => {
+                            if (loc === 'FSB') return 0; // FSB
+                            if (loc === 'WIP' || loc === 'INCOMING') return 1; // WIP
+                            return 2;
+                          };
                           return (
-                            <ul className="divide-y divide-gray-300 bg-slate-50">
-                              {sortedRows.map((r) => {
-                                // 2️⃣ STATUS COMP
-                                const statusComp =
-                                  r.location === 'OUTGOING'
-                                    ? 'FSB'
-                                    : r.location === 'INCOMING' ||
-                                      r.location === 'DEPLOYED'
-                                    ? 'WIP'
-                                    : '-';
+                            getPriority(a.location) - getPriority(b.location)
+                          );
+                        });
 
-                                return (
-                                  <li
-                                    key={r.id}
-                                    className="
+                        return (
+                          <ul className="divide-y divide-gray-300 bg-slate-50">
+                            {sortedRows.map((r) => {
+                              // 2️⃣ STATUS COMP
+                              const statusComp =
+                                r.location === 'FSB'
+                                  ? 'FSB'
+                                  : r.location === 'INCOMING' ||
+                                    r.location === 'WIP'
+                                  ? 'WIP'
+                                  : '-';
+
+                              return (
+                                <li
+                                  key={r.id}
+                                  className="
               grid grid-cols-12
               px-2 py-2
               text-[11px]
@@ -1029,101 +1133,96 @@ export default function BUSH4() {
               hover:bg-slate-200
               transition-colors
             "
-                                  >
-                                    {/* IDENTIFICATION */}
-                                    <div className="col-span-3 flex flex-col gap-0.5">
-                                      <span className="font-bold text-blue-600 flex flex-wrap gap-1">
-                                        {r.ac_reg || '-'} • {r.order || '-'} •{' '}
-                                        {r.pn || '-'} • {r.sn || '-'}
-                                      </span>
-                                      <span className="text-gray-700 whitespace-normal break-words">
-                                        {r.description || '-'}
-                                      </span>
-                                    </div>
+                                >
+                                  {/* IDENTIFICATION */}
+                                  <div className="col-span-3 flex flex-col gap-0.5">
+                                    <span className="font-bold text-blue-600 flex flex-wrap gap-1">
+                                      {r.ac_reg || '-'} • {r.order || '-'} •{' '}
+                                      {r.pn || '-'} • {r.sn || '-'}
+                                    </span>
+                                    <span className="text-gray-700 whitespace-normal break-words">
+                                      {r.description || '-'}
+                                    </span>
+                                  </div>
 
-                                    {/* STATUS COMP (DIPINDAH KE DEPAN LOCATION) */}
-                                    <div className="col-span-1 flex items-center justify-center font-bold">
-                                      <span
-                                        className={`px-2 py-0.5 rounded-full text-white
+                                  {/* LOCATION */}
+                                  <div className="col-span-1 flex items-center justify-center font-bold">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-white
                   ${
-                    statusComp === 'FSB'
+                    r.location === 'FSB'
                       ? 'bg-green-600'
-                      : statusComp === 'WIP'
+                      : r.location === 'WIP'
                       ? 'bg-yellow-500'
                       : 'bg-gray-400'
                   }`}
-                                      >
-                                        {statusComp}
-                                      </span>
-                                    </div>
+                                    >
+                                      {r.location || '-'}
+                                    </span>
+                                  </div>
 
-                                    {/* LOCATION */}
-                                    <div className="col-span-1 flex items-center justify-center font-bold">
-                                      <span
-                                        className={`${
-                                          r.location === 'OUTGOING'
-                                            ? 'text-green-700'
-                                            : r.location === 'INCOMING'
-                                            ? 'text-yellow-700'
-                                            : 'text-blue-700'
-                                        }`}
-                                      >
-                                        {r.location || '-'}
-                                      </span>
-                                    </div>
+                                  {/* DOC STATUS */}
+                                  <div className="col-span-1 flex items-center justify-center font-bold">
+                                    <span
+                                      className={`${
+                                        r.doc_status === 'OPEN'
+                                          ? 'text-red-600'
+                                          : r.doc_status === 'PROGRESS'
+                                          ? 'text-yellow-600'
+                                          : r.doc_status === 'CLOSED'
+                                          ? 'text-green-600'
+                                          : 'text-gray-600'
+                                      }`}
+                                    >
+                                      {r.doc_status || '-'}
+                                    </span>
+                                  </div>
 
-                                    {/* DOC STATUS */}
-                                    <div className="col-span-1 flex items-center justify-center font-bold">
-                                      <span
-                                        className={`${
-                                          r.doc_status === 'OPEN'
-                                            ? 'text-red-600'
-                                            : r.doc_status === 'PROGRESS'
-                                            ? 'text-yellow-600'
-                                            : r.doc_status === 'CLOSED'
-                                            ? 'text-green-600'
-                                            : 'text-gray-600'
-                                        }`}
-                                      >
-                                        {r.doc_status || '-'}
-                                      </span>
-                                    </div>
+                                  {/* STATUS MAT */}
+                                  <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
+                                    {r.remark_mat || '-'}
+                                  </div>
 
-                                    {/* STATUS MAT */}
-                                    <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
-                                      {r.remark_mat || '-'}
-                                    </div>
-
-                                    {/* STATUS JOB */}
-                                    <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
+                                  {/* STATUS JOB */}
+                                  <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-white
+                  ${
+                    r.status_job === 'CLOSED'
+                      ? 'bg-green-600'
+                      : r.status_job === 'PROGRESS'
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
+                  }`}
+                                    >
                                       {r.status_job || '-'}
-                                    </div>
+                                    </span>
+                                  </div>
 
-                                    {/* EST FINISH */}
-                                    <div className="col-span-1 flex items-center justify-center whitespace-normal break-words">
-                                      {r.est_date
-                                        ? formatDateToDDMMMYYYY(
-                                            new Date(r.est_date)
-                                          )
-                                        : '-'}
-                                    </div>
+                                  {/* EST FINISH */}
+                                  <div className="col-span-1 flex items-center justify-center whitespace-normal break-words">
+                                    {r.est_date
+                                      ? formatDateToDDMMMYYYY(
+                                          new Date(r.est_date)
+                                        )
+                                      : '-'}
+                                  </div>
 
-                                    {/* REMARK */}
-                                    <div className="col-span-3 whitespace-normal break-words text-center">
-                                      {r.remark || '-'}
-                                    </div>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          );
-                        })()}
-                      </div>
+                                  {/* REMARK */}
+                                  <div className="col-span-3 whitespace-normal break-words text-center">
+                                    {r.remark || '-'}
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        );
+                      })()}
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -1223,13 +1322,13 @@ export default function BUSH4() {
           <div className="relative w-[120px] ">
             <input
               type="text"
-              value={filterAcReg}
+              value={filterAcInput}
               onChange={(e) => {
-                setFilterAcReg(e.target.value);
+                setFilterAcInput(e.target.value);
                 setShowSuggestions(true);
               }}
               onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)} // Delay untuk biar sempat klik
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Filter A/C Reg"
               className="border border-gray-500 bg-[#292929] text-white rounded-md px-1 py-1 text-[11px] w-full shadow hover:bg-gray-500"
             />
@@ -1238,19 +1337,33 @@ export default function BUSH4() {
               <ul className="absolute z-50 bg-white border w-full max-h-40 overflow-y-auto text-[11px] shadow-md rounded">
                 <li
                   className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
-                  onMouseDown={() => setFilterAcReg('')}
+                  onMouseDown={() => {
+                    setFilterAcRegs([]);
+                    setFilterAcInput('');
+                    setSearchTerm(''); // 🔥 WAJIB
+                    setShowSuggestions(false);
+                  }}
                 >
                   All A/C Reg
                 </li>
+
                 {filteredOptions.length === 0 && (
                   <li className="px-2 py-1 text-gray-400">No match</li>
                 )}
+
                 {filteredOptions.map((reg) => (
                   <li
                     key={reg}
-                    className="px-2 py-1 hover:bg-blue-100 cursor-pointer"
+                    className={`
+          px-2 py-1 cursor-pointer hover:bg-blue-100
+          ${filterAcRegs.includes(reg) ? 'bg-blue-200 font-bold' : ''}
+        `}
                     onMouseDown={() => {
-                      setFilterAcReg(reg);
+                      setFilterAcRegs((prev) =>
+                        prev.includes(reg) ? prev : [...prev, reg]
+                      );
+                      setFilterAcInput('');
+                      setSearchTerm(''); // 🔥 WAJIB
                       setShowSuggestions(false);
                     }}
                   >
@@ -1327,14 +1440,28 @@ export default function BUSH4() {
             value={filterW}
             onChange={(e) => setFilterW(e.target.value)}
             options={[
-              { label: 'All Wrkctr', value: '' },
-              { label: 'W301', value: 'W301' },
-              { label: 'W302', value: 'W302' },
-              { label: 'W303', value: 'W303' },
-              { label: 'W304', value: 'W304' },
-              { label: 'W305', value: 'W305' },
+              { label: 'All Shop', value: '' },
+              { label: 'Sheetmetal', value: 'W301' },
+              { label: 'Composite', value: 'W302' },
+              { label: 'Seat', value: 'W304' },
+              { label: 'Cabin', value: 'W305' },
+              { label: 'Machining', value: 'W303' },
             ]}
             className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
+          />
+
+          <CustomSelect
+            value={filterLocation}
+            onChange={(e) => setFilterLocation(e.target.value)}
+            options={[
+              { label: 'All Item', value: '' },
+              { label: 'Awaiting', value: 'awaiting' },
+              { label: 'Incoming', value: 'incoming' },
+              { label: 'WIP', value: 'wip' },
+              { label: 'FSB', value: 'fsb' },
+              { label: 'Release', value: 'release' },
+            ]}
+            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
           />
 
           <CustomSelect
@@ -1344,9 +1471,10 @@ export default function BUSH4() {
               { label: 'All Status Job', value: '' },
               { label: 'OPEN', value: 'OPEN' },
               { label: 'PROGRESS', value: 'PROGRESS' },
+              { label: 'OPEN + PROGRESS', value: 'OPEN_PROGRESS' }, // ✅ tambahan
               { label: 'CLOSED', value: 'CLOSED' },
             ]}
-            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
+            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
           />
 
           {/* Sort By */}
@@ -1375,165 +1503,245 @@ export default function BUSH4() {
           />
         </div>
 
-        {/* 🧊 Ini pembungkus baru untuk freeze header */}
-        <div className="w-full overflow-auto max-h-[70vh]  rounded-md shadow-inner dark-scroll">
-          <table
-            className="
-    w-full
-    table-auto
-    text-[11px]
-    leading-tight
-    
-    
-  "
-          >
-            <thead className="sticky top-0 z-0 bg-teal-700 shadow">
-              <tr className="bg-[#00919f] text-white text-xs font-semibold text-center">
-                {/* NO */}
-                <th className=" px-2 py-1 text-center w-[40px]">No</th>
+        {/* 📊 Status Summary dan Donut Chart */}
+        <div className="flex gap-2 w-full items-start mb-3 overflow-hidden">
+          {/* ================= PROSUM (KIRI) ================= */}
+          <div className="w-[450px] overflow-auto max-h-[80vh]  rounded-lg shadow-inner dark-scroll ">
+            <div className="rounded-lg  shadow ">
+              <div className="bg-[#00838f] sticky top-0 z-20  text-white text-sm font-bold text-center py-2">
+                PROJECT SUMMARY
+              </div>
 
-                {showCheckboxColumn && (
-                  <th className="px-1 py-1">
-                    <input
-                      type="checkbox"
-                      checked={
-                        selectedRows.length === filteredRows.length &&
-                        filteredRows.length > 0
+              {/* HEADER */}
+              <div className="sticky top-[35px] z-10 grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr] text-xs font-bold text-white bg-[#607d8b] text-center">
+                <div>A/C</div>
+                <div>O</div>
+                <div>P</div>
+                <div>C</div>
+                <div>Total</div>
+                <div>RTS</div>
+                <div>TAT</div>
+              </div>
+
+              {/* ROWS */}
+              {sortedProjectSummary.map((row, index) => {
+                const remain = getRemainDays(row.rts);
+
+                return (
+                  <div
+                    key={row.acReg}
+                    onClick={() =>
+                      setFilterAcRegs((prev) =>
+                        prev.includes(row.acReg)
+                          ? prev.filter((ac) => ac !== row.acReg)
+                          : [...prev, row.acReg]
+                      )
+                    }
+                    className={`
+                    grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr]
+                    place-items-center text-xs text-center border-t
+                    cursor-pointer transition-colors
+                  
+                    ${
+                      filterAcRegs.includes(row.acReg)
+                        ? 'bg-teal-200 dark:bg-teal-700'
+                        : index % 2 === 0
+                        ? 'bg-white dark:bg-slate-800'
+                        : 'bg-gray-100 dark:bg-slate-700'
+                    }
+                  
+                    hover:bg-slate-200 dark:hover:bg-slate-600
+                  `}
+                  >
+                    <div className="text-gray-600 font-bold ">{row.acReg}</div>
+                    <div className="text-red-600 font-bold ">{row.open}</div>
+                    <div className="text-yellow-600 font-bold ">
+                      {row.progress}
+                    </div>
+                    <div className="text-green-600 font-bold ">
+                      {row.closed}
+                    </div>
+                    <div className="text-purple-600 font-bold">
+                      {row.totalOrder}
+                    </div>
+                    <div className="text-gray-600 font-bold ">
+                      {row.rts && !isNaN(new Date(row.rts).getTime())
+                        ? formatDateToDDMMMYYYY(new Date(row.rts))
+                        : '-'}
+                    </div>
+
+                    {/* REMAIN */}
+                    <div
+                      className={
+                        remain !== null
+                          ? remain < 0
+                            ? 'text-red-600 font-bold'
+                            : remain <= 3
+                            ? 'text-orange-500 font-bold'
+                            : 'text-green-600 font-bold '
+                          : 'text-gray-400'
                       }
-                      onChange={(e) => {
-                        setSelectedRows(
-                          e.target.checked ? filteredRows.map((r) => r.id) : []
-                        );
-                      }}
-                    />
-                  </th>
-                )}
+                    >
+                      {remain !== null ? remain : '-'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-                {/* DOC TYPE */}
-                <th className=" px-2 py-1 text-center w-[90px]">Doc Type</th>
-                <th className=" px-2 py-1 text-center w-[90px]">A/C Reg</th>
-                {/* IDENTIFICATION */}
-                <th className="px-2 py-1 text-left min-w-[300px]">
-                  IDENTIFICATION
-                </th>
-
-                {/* KOLOM LAIN */}
-                <th className="px-1 py-1">POSITION</th>
-                <th className="px-1 py-1 min-w-[90px]">DATE IN</th>
-                <th className="px-1 py-1  min-w-[100px]">DOC STATUS</th>
-                <th className="px-1 py-1">PRIORITY</th>
-                <th className="px-1 py-1  min-w-[90px]">STATUS JOB</th>
-                <th className="px-1 py-1">PLAN FSB</th>
-                <th className="px-1 py-1   min-w-[100px]">REMARK SHOP</th>
-                <th className="px-1 py-1  min-w-[120px]">REMARK PE/PPC</th>
-                <th className="px-1 py-1">TRACKING SHIPMENT</th>
-                <th className="px-1 py-1 min-w-[90px]">LINK SCAN </th>
-                {/* lanjutkan sesuai kebutuhan */}
-              </tr>
-            </thead>
-
-            <tbody>
-              {paginatedRows.map((row, rowIndex) => (
-                <tr
-                  key={row.id || rowIndex}
-                  onClick={() => setActiveRow(row.id)}
-                  className={`
-                  cursor-pointer
-                  ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
-                  hover:bg-slate-200
-                  ${activeRow === row.id ? 'bg-teal-200' : ''}
-                  transition-colors
-                `}
-                >
+          {/* 🧊 Ini pembungkus baru untuk freeze header */}
+          <div className="w-full overflow-auto max-h-[80vh]  rounded-lg shadow-inner dark-scroll">
+            <table className="w-full table-auto text-[11px]  leading-tight ">
+              <thead className="sticky top-0 z-0 bg-teal-700 shadow">
+                <tr className="bg-[#00919f] text-white text-xs font-semibold text-center">
                   {/* NO */}
-                  <td className=" px-2 py-1 text-center text-xs text-gray-600">
-                    {(currentPage - 1) * rowsPerPage + rowIndex + 1}
-                  </td>
+                  <th className=" px-2 py-1 text-center w-[40px]">No</th>
 
-                  {/* CHECKBOX */}
                   {showCheckboxColumn && (
-                    <td className="border px-2 py-1 text-center">
+                    <th className="px-1 py-1">
                       <input
                         type="checkbox"
-                        checked={selectedRows.includes(row.id)}
-                        onChange={() => toggleSelectRow(row.id)}
+                        checked={
+                          selectedRows.length === filteredRows.length &&
+                          filteredRows.length > 0
+                        }
+                        onChange={(e) => {
+                          setSelectedRows(
+                            e.target.checked
+                              ? filteredRows.map((r) => r.id)
+                              : []
+                          );
+                        }}
                       />
-                    </td>
+                    </th>
                   )}
+
                   {/* DOC TYPE */}
-                  <td className="border px-2 py-1 text-center text-[11px] font-semibold">
-                    {row.doc_type || ''}
-                  </td>
-
-                  <td className="border px-2 py-1 text-center text-[11px] font-semibold">
-                    {row.ac_reg || ''}
-                  </td>
-
-                  {/* 🔷 IDENTIFICATION (GABUNGAN) */}
+                  <th className=" px-2 py-1 text-center w-[90px]">Doc</th>
+                  <th className=" px-2 py-1 text-center w-[90px]">A/C Reg</th>
                   {/* IDENTIFICATION */}
-                  <td className="border px-2 py-1 text-left align-top">
-                    <div className="flex flex-col gap-0.5">
-                      {/* BARIS 1 */}
-                      {(() => {
-                        const idLine = [row.order, row.pn, row.sn].filter(
-                          Boolean
-                        );
+                  <th className="px-2 py-1 text-left min-w-[300px]">
+                    IDENTIFICATION
+                  </th>
 
-                        return (
-                          idLine.length > 0 && (
-                            <span className="font-bold text-blue-600">
-                              {idLine.join(' || ')}
-                            </span>
-                          )
-                        );
-                      })()}
+                  {/* KOLOM LAIN */}
+                  <th className="px-1 py-1 min-w-[90px]">STATUS ITEM</th>
+                  <th className="px-1 py-1 min-w-[60px]">DATE IN</th>
+                  <th className="px-1 py-1  min-w-[100px]">DOC STATUS</th>
+                  <th className="px-1 py-1">PRIORITY</th>
+                  <th className="px-1 py-1  min-w-[90px]">STATUS JOB</th>
+                  <th className="px-1 py-1">PLAN FSB</th>
+                  <th className="px-1 py-1   min-w-[100px]">REMARK SHOP</th>
+                  <th className="px-1 py-1  min-w-[120px]">REMARK PE/PPC</th>
+                  <th className="px-1 py-1">TRACKING SHIPMENT</th>
+                  <th className="px-1 py-1 min-w-[90px]">LINK SCAN </th>
+                  {/* lanjutkan sesuai kebutuhan */}
+                </tr>
+              </thead>
 
-                      {/* BARIS 2 */}
-                      {row.description && (
-                        <span className="text-gray-700 break-words">
-                          {row.description}
-                        </span>
-                      )}
+              <tbody>
+                {paginatedRows.map((row, rowIndex) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => setActiveRow(row.id)}
+                    className={`
+        cursor-pointer
+        ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
+        hover:bg-slate-200
+        ${activeRow === row.id ? 'bg-teal-200' : ''}
+        transition-colors
+      `}
+                  >
+                    {/* NO */}
+                    <td className="border px-2 py-1 text-center text-xs text-gray-600">
+                      {(currentPage - 1) * rowsPerPage + rowIndex + 1}
+                    </td>
 
-                      {/* BARIS 3 */}
-                      {(() => {
-                        const metaLine = [
-                          row.type_ac,
-                          row.category,
-                          row.shop,
-                        ].filter(Boolean);
+                    {/* CHECKBOX */}
+                    {showCheckboxColumn && (
+                      <td className="border px-2 py-1 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(row.id)}
+                          onChange={() => toggleSelectRow(row.id)}
+                        />
+                      </td>
+                    )}
+                    {/* DOC TYPE */}
+                    <td className="border px-2 py-1 text-center text-[11px] font-semibold">
+                      {row.doc_type || ''}
+                    </td>
 
-                        return (
-                          metaLine.length > 0 && (
-                            <span className="text-[10px] text-gray-500">
-                              {metaLine.join(' || ')}
-                            </span>
-                          )
-                        );
-                      })()}
-                    </div>
-                  </td>
+                    <td className="border px-2 py-1 text-center text-[11px] font-semibold min-w-[70px]">
+                      {row.ac_reg || ''}
+                    </td>
 
-                  {/* LOCATION */}
-                  <td className="border px-1 py-1 text-center font-bold">
-                    {row.location || ''}
-                  </td>
+                    {/* 🔷 IDENTIFICATION (GABUNGAN) */}
+                    {/* IDENTIFICATION */}
+                    <td className="border px-2 py-1 text-left align-top">
+                      <div className="flex flex-col gap-0.5">
+                        {/* BARIS 1 */}
+                        {(() => {
+                          const idLine = [row.order, row.pn, row.sn].filter(
+                            Boolean
+                          );
 
-                  {/* DATE IN */}
-                  <td className="border px-3 py-1 text-center">
-                    {row.date_in
-                      ? new Date(row.date_in).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      : ''}
-                  </td>
+                          return (
+                            idLine.length > 0 && (
+                              <span className="font-bold text-blue-600">
+                                {idLine.join(' || ')}
+                              </span>
+                            )
+                          );
+                        })()}
 
-                  {/* DOC STATUS */}
-                  <td className="border px-1 py-1 text-center font-semibold">
-                    <span
-                      className={`px-1 py-0.5 rounded text-white
+                        {/* BARIS 2 */}
+                        {row.description && (
+                          <span className="text-gray-700 break-words">
+                            {row.description}
+                          </span>
+                        )}
+
+                        {/* BARIS 3 */}
+                        {(() => {
+                          const metaLine = [
+                            row.type_ac,
+                            row.category,
+                            row.shop,
+                          ].filter(Boolean);
+
+                          return (
+                            metaLine.length > 0 && (
+                              <span className="text-[10px] text-gray-500 italic">
+                                {metaLine.join(' || ')}
+                              </span>
+                            )
+                          );
+                        })()}
+                      </div>
+                    </td>
+
+                    {/* LOCATION */}
+                    <td className="border px-1 py-1 text-center">
+                      {row.location || ''}
+                    </td>
+
+                    {/* DATE IN */}
+                    <td className="border px-3 py-1 text-center">
+                      {row.date_in
+                        ? new Date(row.date_in).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : ''}
+                    </td>
+
+                    {/* DOC STATUS */}
+                    <td className="border px-1 py-1 text-center ">
+                      <span
+                        className={`px-1 py-0.5 rounded 
             ${
               row.doc_status === 'OPEN'
                 ? 'bg-red-500'
@@ -1541,95 +1749,110 @@ export default function BUSH4() {
                 ? 'bg-yellow-500'
                 : row.doc_status === 'CLOSED'
                 ? 'bg-green-500'
-                : 'bg-gray-400'
+                : 'bg-transparent'
             }`}
-                    >
-                      {row.doc_status || ''}
-                    </span>
-                  </td>
-
-                  {/* PRIORITY */}
-                  <td className="border px-1 py-1 text-center">
-                    {row.priority || ''}
-                  </td>
-
-                  {/* STATUS JOB */}
-                  <td className="border px-1 py-1 text-center">
-                    {row.status_job || ''}
-                  </td>
-
-                  <td className="border px-1 py-1 text-center whitespace-nowrap">
-                    {row.est_date &&
-                      `${formatDateToDDMMMYYYY(new Date(row.est_date))}`}
-                  </td>
-
-                  <td className="border px-1 py-1 text-left break-words">
-                    {row.remark_pro && `${row.remark_pro}`}
-                  </td>
-
-                  <td className="border px-1 py-1 text-left break-words">
-                    {row.remark && `${row.remark}`}
-                  </td>
-
-                  <td className="border px-1 py-1 text-center break-words">
-                    {row.tracking_sp && `${row.tracking_sp}`}
-                  </td>
-                  <td className="border px-1 py-1 text-center">
-                    {row.link_scan && (
-                      <a
-                        href={row.link_scan}
-                        target="blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 underline hover:text-blue-800"
                       >
-                        SCAN
-                      </a>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        {row.doc_status || ''}
+                      </span>
+                    </td>
 
-          {notification && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-              <div className="bg-white px-6 py-4 rounded shadow-lg text-center text-gray-800 text-sm">
-                {notification}
-              </div>
-            </div>
-          )}
+                    {/* PRIORITY */}
+                    <td className="border px-1 py-1 text-center">
+                      {row.priority || ''}
+                    </td>
 
-          {showConfirmModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-white p-6 rounded shadow-md w-[90%] max-w-md">
-                <h2 className="text-lg font-semibold mb-4">Confirmation</h2>
-                <p className="mb-4">{confirmMessage}</p>{' '}
-                {/* ← tampilkan pesan dinamis */}
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => setShowConfirmModal(false)}
-                    className="px-4 py-2 mr-2 text-gray-600 hover:text-gray-800"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={async () => {
-                      setShowConfirmModal(false);
-                      if (pendingAction) {
-                        await pendingAction(); // jalankan aksi
-                        setPendingAction(null);
-                        setSelectedRows([]); // kosongkan ceklis
-                      }
-                    }}
-                    className="px-4 py-2 bg-red-600 text-white hover:bg-red-700"
-                  >
-                    Confirm
-                  </button>
+                    {/* STATUS JOB */}
+                    <td className="border px-1 py-1 text-center">
+                      <span
+                        className={`px-1 py-0.5 rounded text-white
+            ${
+              row.status_job === 'OPEN'
+                ? 'bg-red-500'
+                : row.status_job === 'PROGRESS'
+                ? 'bg-yellow-500'
+                : row.status_job === 'CLOSED'
+                ? 'bg-green-500'
+                : 'bg-transparent'
+            }`}
+                      >
+                        {row.status_job || ''}
+                      </span>
+                    </td>
+
+                    <td className="border px-1 py-1 text-center whitespace-nowrap">
+                      {row.est_date &&
+                        `${formatDateToDDMMMYYYY(new Date(row.est_date))}`}
+                    </td>
+
+                    <td className="border px-1 py-1 text-left break-words">
+                      {row.remark_pro && `${row.remark_pro}`}
+                    </td>
+
+                    <td className="border px-1 py-1 text-left break-words">
+                      {row.remark && `${row.remark}`}
+                    </td>
+
+                    <td className="border px-1 py-1 text-center break-words">
+                      {row.tracking_sp && `${row.tracking_sp}`}
+                    </td>
+                    <td className="border px-1 py-1 text-center">
+                      {row.link_scan && (
+                        <a
+                          href={row.link_scan}
+                          target="blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline hover:text-blue-800"
+                        >
+                          SCAN
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {notification && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+                <div className="bg-white px-6 py-4 rounded shadow-lg text-center text-gray-800 text-sm">
+                  {notification}
                 </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {showConfirmModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                <div className="bg-white p-6 rounded shadow-md w-[90%] max-w-md">
+                  <h2 className="text-lg font-semibold mb-4">Confirmation</h2>
+                  <p className="mb-4">{confirmMessage}</p>{' '}
+                  {/* ← tampilkan pesan dinamis */}
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setShowConfirmModal(false)}
+                      className="px-4 py-2 mr-2 text-gray-600 hover:text-gray-800"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setShowConfirmModal(false);
+                        if (pendingAction) {
+                          await pendingAction(); // jalankan aksi
+                          setPendingAction(null);
+                          setSelectedRows([]); // kosongkan ceklis
+                        }
+                      }}
+                      className="px-4 py-2 bg-red-600 text-white hover:bg-red-700"
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+
         <div className="flex justify-start mt-2 text-white text-[11px] items-center space-x-2">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}

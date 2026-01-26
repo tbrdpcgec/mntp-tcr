@@ -18,6 +18,11 @@ export default function Abmp() {
     { ac_reg: '', rts: null },
   ]);
   const [activeRow, setActiveRow] = useState<number | null>(null);
+  const [editingCell, setEditingCell] = useState<{
+    id: string;
+    field: string;
+  } | null>(null);
+  const [tempValue, setTempValue] = useState('');
 
   const sheetUrl =
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vR87GYwPPCTGhIYZy-7p5SkOYqTaGpBUbbkvZTDRUMqDBOZvnhra6l4_N3O1PwKr2EL2qD9ReOb5Jac/pub?output=csv';
@@ -300,16 +305,72 @@ export default function Abmp() {
                     <td className="border px-2 py-1 bg-inherit">
                       {row.ac_reg}
                     </td>
-                    <td className="border px-2 py-1 bg-inherit">
-                      {row.rts
-                        ? new Date(row.rts)
-                            .toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })
-                            .replace(/ /g, '-')
-                        : ''}
+
+                    {/* Kolom RTS editable */}
+                    <td
+                      className="border px-2 py-1 bg-inherit text-center"
+                      onClick={() =>
+                        setEditingCell({ id: row.id, field: 'rts' })
+                      }
+                    >
+                      {editingCell?.id === row.id &&
+                      editingCell?.field === 'rts' ? (
+                        <input
+                          type="date"
+                          value={
+                            row.rts
+                              ? new Date(row.rts).toISOString().split('T')[0]
+                              : ''
+                          }
+                          onChange={(e) => setTempValue(e.target.value)}
+                          onBlur={() => {
+                            handleUpdate(row.id, 'rts', tempValue);
+                            setRows((prev) =>
+                              prev.map((r) =>
+                                r.id === row.id ? { ...r, rts: tempValue } : r
+                              )
+                            );
+                            setEditingCell(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleUpdate(row.id, 'rts', tempValue);
+                              setRows((prev) =>
+                                prev.map((r) =>
+                                  r.id === row.id ? { ...r, rts: tempValue } : r
+                                )
+                              );
+                              setEditingCell(null);
+                            }
+                            if (e.key === 'Escape') {
+                              setEditingCell(null);
+                            }
+                          }}
+                          autoFocus
+                          className="
+              w-full
+              bg-transparent
+              px-1 py-0.5
+              text-[11px]
+              rounded-md
+              border
+              border-teal-500
+              focus:outline-none
+              focus:ring-1 focus:ring-teal-500
+              text-center
+            "
+                        />
+                      ) : row.rts ? (
+                        new Date(row.rts)
+                          .toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                          .replace(/ /g, '-')
+                      ) : (
+                        ''
+                      )}
                     </td>
                   </tr>
                 ))}

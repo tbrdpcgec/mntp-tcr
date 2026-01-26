@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 import * as XLSX from 'xlsx';
 import CustomSelect from '../components/CustomSelect';
 
-const LOCATIONS = ['AWAITING', 'INCOMING', 'DEPLOYED', 'OUTGOING', 'RELEASE'];
+const LOCATIONS = ['AWAITING', 'INCOMING', 'WIP', 'FSB', 'RELEASE'];
 const DOC_TYPES = ['DN', 'JC', 'MDR', 'PDS'];
 const PLNTWKCNTR = ['CGK', 'GAH1', 'GAH2', 'GAH3', 'GAH4', 'WSSR', 'WSST'];
 
@@ -71,7 +71,7 @@ const columnWidths: Record<string, string> = {
   sp: 'min-w-[120px]',
   loc_doc: 'min-w-[0px]',
   date_out: 'min-w-[0px]',
-
+  pds_no: 'min-w-[100px]',
   tracking_sp: 'min-w-[300px]',
   link_scan: 'max-w-[300px]',
 };
@@ -86,12 +86,11 @@ const COLUMN_ORDER: { key: string; label: string }[] = [
   { key: 'pn', label: 'P/N' },
   { key: 'sn', label: 'S/N' },
   { key: 'category', label: 'Category' },
-  { key: 'location', label: 'Pos' },
+  { key: 'pds_no', label: 'PDS No.' },
   { key: 'date_in', label: 'Date In' },
-  { key: 'remark_mat', label: 'Material' },
+  { key: 'location', label: 'Status Comp' },
   { key: 'doc_status', label: 'Doc Status' },
-
-  { key: 'status_pe', label: 'status_pe' },
+  { key: 'remark_mat', label: 'Material' },
   { key: 'priority', label: 'Priority' },
   { key: 'remark', label: 'Remark' },
   { key: 'cek_sm1', label: 'TCR-1' },
@@ -308,6 +307,8 @@ export default function BUSH4() {
   const [filterDocStatus, setFilterDocStatus] = useState('');
   const [filterStatusJob, setFilterStatusJob] = useState('');
   const [filterPriority, setFilterPriority] = useState('All');
+
+  const [filterLocation, setFilterLocation] = useState('');
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -690,25 +691,68 @@ export default function BUSH4() {
     }
 
     const currentRow = rows.find((r) => r.id === id);
-    if (currentRow) {
-      // gabungkan row lama + update baru → simulatedRow
-      let simulatedRow = { ...currentRow, ...updates };
+    if (!currentRow) return; // ⬅️ penting
 
-      // 🔹 Step X: Auto calculate SHOP jika cek_* berubah
-      const affectsShop = Object.keys(updates).some((k) =>
+    // gabungkan row lama + update baru → simulatedRow
+    let simulatedRow = { ...currentRow, ...updates };
+
+    // 🔹 Hitung SHOP jika cek_* berubah ATAU bulk
+    const affectsShop =
+      keyOrBulk === 'bulk' ||
+      Object.keys(updates).some((k) =>
         ['cek_sm1', 'cek_sm4', 'cek_cs1', 'cek_cs4', 'cek_mw'].includes(k)
       );
 
-      if (affectsShop) {
-        updates['shop'] = generateShopFromCek(simulatedRow);
-        simulatedRow = { ...simulatedRow, shop: updates['shop'] };
-      }
+    if (affectsShop) {
+      updates['shop'] = generateShopFromCek(simulatedRow);
+      simulatedRow = { ...simulatedRow, shop: updates['shop'] };
+    }
 
-      // 🔹 Step 1: Recalculate status_pe
-      const keys = Object.keys(updates);
-      const affectsStatusPE = keys.some((k) =>
+    // 🔹 Step 1: Recalculate status_pe
+    const keys = Object.keys(updates);
+    const affectsStatusPE = keys.some((k) =>
+      [
+        'doc_status',
+        'status_sm1',
+        'status_sm4',
+        'status_cs1',
+        'status_cs4',
+        'status_mw',
+        'uld',
+        'nd',
+        'tjo',
+        'other',
+        'cek_sm1',
+        'cek_sm4',
+        'cek_cs1',
+        'cek_cs4',
+        'cek_mw',
+      ].includes(k)
+    );
+
+    if (affectsStatusPE) {
+      updates['status_pe'] = getStatusPE(
+        simulatedRow.doc_status ?? '',
+        simulatedRow.status_sm1 ?? '',
+        simulatedRow.status_sm4 ?? '',
+        simulatedRow.status_cs1 ?? '',
+        simulatedRow.status_cs4 ?? '',
+        simulatedRow.status_mw ?? '',
+        simulatedRow.tjo ?? '',
+        simulatedRow.uld ?? '',
+        simulatedRow.nd ?? '',
+        simulatedRow.other ?? ''
+      );
+
+      simulatedRow = { ...simulatedRow, status_pe: updates['status_pe'] };
+    }
+
+    // 🔹 Step 2: Recalculate status_job
+    const affectsStatusJob =
+      keys.includes('status_pe') || // ✅ TAMBAHAN PENTING
+      affectsStatusPE ||
+      keys.some((k) =>
         [
-          'doc_status',
           'status_sm1',
           'status_sm4',
           'status_cs1',
@@ -718,64 +762,26 @@ export default function BUSH4() {
           'nd',
           'tjo',
           'other',
-          'cek_sm1',
           'cek_sm4',
-          'cek_cs1',
+          'cek_sm1',
           'cek_cs4',
+          'cek_cs1',
           'cek_mw',
         ].includes(k)
       );
 
-      if (affectsStatusPE) {
-        updates['status_pe'] = getStatusPE(
-          simulatedRow.doc_status ?? '',
-          simulatedRow.status_sm1 ?? '',
-          simulatedRow.status_sm4 ?? '',
-          simulatedRow.status_cs1 ?? '',
-          simulatedRow.status_cs4 ?? '',
-          simulatedRow.status_mw ?? '',
-          simulatedRow.tjo ?? '',
-          simulatedRow.uld ?? '',
-          simulatedRow.nd ?? '',
-          simulatedRow.other ?? ''
-        );
-
-        simulatedRow = { ...simulatedRow, status_pe: updates['status_pe'] };
-      }
-
-      // 🔹 Step 2: Recalculate status_job
-      const affectsStatusJob =
-        keys.includes('status_pe') || // ✅ TAMBAHAN PENTING
-        affectsStatusPE ||
-        keys.some((k) =>
-          [
-            'status_sm1',
-            'status_sm4',
-            'status_cs1',
-            'status_cs4',
-            'status_mw',
-            'uld',
-            'nd',
-            'tjo',
-            'other',
-            'cek_sm4',
-            'cek_sm1',
-            'cek_cs4',
-            'cek_cs1',
-            'cek_mw',
-          ].includes(k)
-        );
-
-      if (affectsStatusJob) {
-        updates['status_job'] = getStatusJob(simulatedRow);
-        simulatedRow = { ...simulatedRow, status_job: updates['status_job'] };
-      }
+    if (affectsStatusJob) {
+      updates['status_job'] = getStatusJob(simulatedRow);
+      simulatedRow = { ...simulatedRow, status_job: updates['status_job'] };
     }
 
+    // 🔹 FORCE recalc status_job saat bulk (tombol refresh)
     // 🔹 FORCE recalc status_job saat bulk (tombol refresh)
     if (keyOrBulk === 'bulk') {
       updates['status_job'] = getStatusJob(simulatedRow);
     }
+
+    console.log('UPDATES TO SUPABASE:', updates);
 
     // 🔹 Update ke Supabase
     const { error } = await supabase
@@ -826,17 +832,28 @@ export default function BUSH4() {
         nd,
         tjo,
         other,
+        cek_sm1,
+  cek_sm4,
+  cek_cs1,
+  cek_cs4,
+  cek_mw,
         remark_sm1,
         remark_sm4,
         remark_cs1,
         remark_cs4,
         remark_mw,
-        remark_pro
+        remark_pro,
+        shop,
+        status_job
       `);
 
       if (error) throw error;
 
       for (const row of allRows) {
+        // 🔹 Recalculate SHOP (PAKSA)
+        const newShop = generateShopFromCek(row);
+
+        // 🔹 Recalculate STATUS PE
         const newPE = getStatusPE(
           row.doc_status,
           row.status_sm1,
@@ -844,18 +861,36 @@ export default function BUSH4() {
           row.status_cs1,
           row.status_cs4,
           row.status_mw,
+          row.tjo,
           row.uld,
           row.nd,
-          row.tjo,
           row.other
         );
 
+        // 🔹 Recalculate STATUS JOB (PAKSA)
+        const simulatedRow = {
+          ...row,
+          shop: newShop,
+          status_pe: newPE,
+        };
+
+        const newStatusJob = getStatusJob(simulatedRow);
+
+        // 🔹 Remark PRO
         const newRemarkPro = buildRemarkPro(row);
 
         const updatePayload: any = {};
 
+        if (newShop !== row.shop) {
+          updatePayload.shop = newShop;
+        }
+
         if (newPE !== row.status_pe) {
           updatePayload.status_pe = newPE;
+        }
+
+        if (newStatusJob !== row.status_job) {
+          updatePayload.status_job = newStatusJob;
         }
 
         if (newRemarkPro !== row.remark_pro) {
@@ -915,6 +950,10 @@ export default function BUSH4() {
         filterPriority === 'All' ? true : row.priority === filterPriority;
       const matchesMaterial =
         filterMaterial === '' || row.material === filterMaterial;
+      const matchesLocation =
+        filterLocation === ''
+          ? true
+          : (row.location || '').toLowerCase() === filterLocation;
 
       return (
         matchesOrder &&
@@ -923,7 +962,8 @@ export default function BUSH4() {
         matchesDocStatus &&
         matchesStatusJob &&
         matchesPriority &&
-        matchesMaterial
+        matchesMaterial &&
+        matchesLocation
       );
     })
 
@@ -1186,6 +1226,20 @@ export default function BUSH4() {
               })),
             ]}
             className="border border-gray-500 rounded-md px-1 py-1 text-[11px] text-white font-normal hover:bg-gray-500 shadow w-[120px]"
+          />
+
+          <CustomSelect
+            value={filterLocation}
+            onChange={(e) => setFilterLocation(e.target.value)}
+            options={[
+              { label: 'All Item', value: '' },
+              { label: 'Awaiting', value: 'awaiting' },
+              { label: 'Incoming', value: 'incoming' },
+              { label: 'WIP', value: 'wip' },
+              { label: 'FSB', value: 'fsb' },
+              { label: 'Release', value: 'release' },
+            ]}
+            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
           />
 
           <CustomSelect
@@ -1494,9 +1548,7 @@ export default function BUSH4() {
                             `}
                           />
                         ) : key === 'shop' ? (
-                          <span className="px-1 text-[11px]">
-                            {generateShopFromCek(row)}
-                          </span>
+                          <span className="px-1 text-[11px]">{row.shop}</span>
                         ) : key === 'location' ? (
                           <CustomSelect
                             value={row[key] || ''}
@@ -1632,6 +1684,7 @@ export default function BUSH4() {
                           key === 'type_ac' ||
                           key === 'pn' ||
                           key === 'sn' ||
+                          key === 'pds_no' ||
                           key === 'category' ||
                           key === 'safe_stock' ||
                           key === 'remain_stock' ||
