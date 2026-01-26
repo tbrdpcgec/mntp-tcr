@@ -302,78 +302,88 @@ export default function Abmp() {
               </thead>
 
               <tbody>
-                {sortedTableData.map((row, rowIndex) => {
-                  const today = new Date();
-                  const rtsDate = row.rts ? new Date(row.rts) : null;
-                  const isPast = rtsDate && rtsDate < today;
+  {sortedTableData.map((row, rowIndex) => {
+    const today = new Date();
+    const rtsDate = row.rts ? new Date(row.rts) : null;
+    const isPast = rtsDate && rtsDate < today;
 
-                  return (
-                    <tr
-                      key={row.id}
-                      onClick={() => setActiveRow(row.id)}
-                      className={`
+    return (
+      <tr
+        key={row.id}
+        onClick={() => setActiveRow(row.id)}
+        className={`
           cursor-pointer
           ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
           hover:bg-slate-200
           ${activeRow === row.id ? 'bg-teal-200' : ''}
           transition-colors
         `}
-                    >
-                      <td className="border px-2 py-1 bg-inherit text-center">
-                        {rowIndex + 1}
-                      </td>
-                      <td className="border px-2 py-1 bg-inherit">
-                        {row.ac_reg}
-                      </td>
+      >
+        <td className="border px-2 py-1 bg-inherit text-center">{rowIndex + 1}</td>
+        <td className="border px-2 py-1 bg-inherit">{row.ac_reg}</td>
 
-                      {/* RTS editable */}
-                      <td
-                        className={`border px-2 py-1 bg-inherit text-center ${
-                          isPast ? 'text-red-600 font-semibold' : ''
-                        }`}
-                        onClick={() => {
-                          setEditingCell({ id: row.id, field: 'rts' });
-                          setTempValue(row.rts || '');
-                        }}
-                      >
-                        {editingCell?.id === row.id &&
-                        editingCell?.field === 'rts' ? (
-                          <input
-                            type="date"
-                            value={tempValue}
-                            onChange={(e) => setTempValue(e.target.value)}
-                            onBlur={() => {
-                              handleUpdate(row.id, 'rts', tempValue);
-                              setEditingCell(null);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleUpdate(row.id, 'rts', tempValue);
-                                setEditingCell(null);
-                              }
-                              if (e.key === 'Escape') {
-                                setEditingCell(null);
-                              }
-                            }}
-                            autoFocus
-                            className="w-full bg-transparent px-1 py-0.5 text-[11px] rounded-md border border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 text-center"
-                          />
-                        ) : rtsDate ? (
-                          rtsDate
-                            .toLocaleDateString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })
-                            .replace(/ /g, '-')
-                        ) : (
-                          ''
-                        )}
-                      </td>
-                    </tr>
+        {/* RTS editable */}
+        <td
+          className={`border px-2 py-1 bg-inherit text-center ${
+            isPast ? 'text-red-600 font-semibold' : ''
+          }`}
+          onClick={() => {
+            setEditingCell({ id: row.id, field: 'rts' });
+            setTempValue(row.rts || '');
+          }}
+        >
+          {editingCell?.id === row.id && editingCell?.field === 'rts' ? (
+            <input
+              type="date"
+              value={tempValue}
+              onChange={(e) => setTempValue(e.target.value)}
+              onBlur={() => {
+                // 🔹 Update tableData langsung supaya warna & sorting ikut berubah
+                setTableData((prev) =>
+                  prev.map((r) =>
+                    r.id === row.id ? { ...r, rts: tempValue } : r
+                  )
+                );
+
+                // 🔹 Update backend / Supabase
+                handleUpdate(row.id, 'rts', tempValue);
+
+                setEditingCell(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setTableData((prev) =>
+                    prev.map((r) =>
+                      r.id === row.id ? { ...r, rts: tempValue } : r
+                    )
                   );
-                })}
-              </tbody>
+                  handleUpdate(row.id, 'rts', tempValue);
+                  setEditingCell(null);
+                }
+                if (e.key === 'Escape') {
+                  setEditingCell(null);
+                }
+              }}
+              autoFocus
+              className="w-full bg-transparent px-1 py-0.5 text-[11px] rounded-md border border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 text-center"
+            />
+          ) : rtsDate ? (
+            rtsDate
+              .toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })
+              .replace(/ /g, '-')
+          ) : (
+            ''
+          )}
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
+
             </table>
           )}
         </div>
