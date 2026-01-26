@@ -20,6 +20,7 @@ const DOC_STATUS_OPTIONS = [
   '🟡DEPLOYED',
   '🟡COMPLETING DOC',
   '🟢COMPLETED',
+  '🟢RTS',
   '🟢SCANNED',
 ];
 
@@ -89,6 +90,8 @@ const COLUMN_ORDER: { key: string; label: string }[] = [
   { key: 'date_in', label: 'Date In' },
   { key: 'remark_mat', label: 'Material' },
   { key: 'doc_status', label: 'Doc Status' },
+
+  { key: 'status_pe', label: 'status_pe' },
   { key: 'priority', label: 'Priority' },
   { key: 'remark', label: 'Remark' },
   { key: 'cek_sm1', label: 'TCR-1' },
@@ -168,8 +171,15 @@ const getStatusPE = (
   status_sm4?: string,
   status_cs1?: string,
   status_cs4?: string,
-  status_mw?: string
+  status_mw?: string,
+  tjo?: string,
+  uld?: string,
+  nd?: string,
+  other?: string
 ): string => {
+  const normalize = (v: any) =>
+    typeof v === 'string' ? v.trim().toLowerCase() : '';
+
   const openStatuses = ['🔴NEED WO'];
   const progressStatuses = [
     '🟡WAITING INSP',
@@ -178,7 +188,7 @@ const getStatusPE = (
     '🟡DEPLOYED',
     '🟡COMPLETING DOC',
   ];
-  const closedStatuses = ['🟢COMPLETED', '🟢SCANNED'];
+  const closedStatuses = ['🟢COMPLETED', '🟢SCANNED', '🟢RTS'];
 
   if (openStatuses.includes(doc_status)) return 'OPEN';
 
@@ -193,16 +203,13 @@ const getStatusPE = (
         tjo,
         uld,
         nd,
-        other, // ✅ WAJIB
-      ];
+        other,
+      ].map(normalize);
 
-      // ✅ pastikan nilai bukan undefined/null dan benar-benar kosong secara teks
-      const normalized = statuses.map((s) =>
-        typeof s === 'string' ? s.trim() : ''
-      );
-      const allEmpty = normalized.every((s) => s === '');
+      const allEmpty = statuses.every((s) => s === '');
       return allEmpty ? 'OPEN' : 'PROGRESS';
     }
+
     return 'PROGRESS';
   }
 
@@ -697,7 +704,7 @@ export default function BUSH4() {
         simulatedRow = { ...simulatedRow, shop: updates['shop'] };
       }
 
-      // 🔹 Step 1: Recalculate status_pe kalau perlu
+      // 🔹 Step 1: Recalculate status_pe
       const keys = Object.keys(updates);
       const affectsStatusPE = keys.some((k) =>
         [
@@ -707,6 +714,10 @@ export default function BUSH4() {
           'status_cs1',
           'status_cs4',
           'status_mw',
+          'uld',
+          'nd',
+          'tjo',
+          'other',
           'cek_sm1',
           'cek_sm4',
           'cek_cs1',
@@ -716,7 +727,6 @@ export default function BUSH4() {
       );
 
       if (affectsStatusPE) {
-        // 💡 Pastikan semua argumen selalu dikirim dari simulatedRow
         updates['status_pe'] = getStatusPE(
           simulatedRow.doc_status ?? '',
           simulatedRow.status_sm1 ?? '',
@@ -724,13 +734,18 @@ export default function BUSH4() {
           simulatedRow.status_cs1 ?? '',
           simulatedRow.status_cs4 ?? '',
           simulatedRow.status_mw ?? '',
+          simulatedRow.tjo ?? '',
+          simulatedRow.uld ?? '',
+          simulatedRow.nd ?? '',
+          simulatedRow.other ?? ''
         );
 
         simulatedRow = { ...simulatedRow, status_pe: updates['status_pe'] };
       }
 
-      // 🔹 Step 2: Recalculate status_job selalu jika status_pe berubah
+      // 🔹 Step 2: Recalculate status_job
       const affectsStatusJob =
+        keys.includes('status_pe') || // ✅ TAMBAHAN PENTING
         affectsStatusPE ||
         keys.some((k) =>
           [
@@ -753,7 +768,13 @@ export default function BUSH4() {
 
       if (affectsStatusJob) {
         updates['status_job'] = getStatusJob(simulatedRow);
+        simulatedRow = { ...simulatedRow, status_job: updates['status_job'] };
       }
+    }
+
+    // 🔹 FORCE recalc status_job saat bulk (tombol refresh)
+    if (keyOrBulk === 'bulk') {
+      updates['status_job'] = getStatusJob(simulatedRow);
     }
 
     // 🔹 Update ke Supabase
@@ -801,6 +822,10 @@ export default function BUSH4() {
         status_cs4,
         status_mw,
         status_pe,
+        uld,
+        nd,
+        tjo,
+        other,
         remark_sm1,
         remark_sm4,
         remark_cs1,
@@ -819,6 +844,10 @@ export default function BUSH4() {
           row.status_cs1,
           row.status_cs4,
           row.status_mw,
+          row.uld,
+          row.nd,
+          row.tjo,
+          row.other
         );
 
         const newRemarkPro = buildRemarkPro(row);
