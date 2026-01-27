@@ -565,6 +565,8 @@ export default function BUSH4() {
       const matchesLocation =
         filterLocation === ''
           ? true
+          : filterLocation === 'wip_fsb'
+          ? ['wip', 'fsb'].includes((row.location || '').toLowerCase())
           : (row.location || '').toLowerCase() === filterLocation;
 
       // ✅ tambahan filter untuk W301–W305
@@ -670,6 +672,15 @@ export default function BUSH4() {
     String(s ?? '')
       .trim()
       .toUpperCase();
+
+  ///togle
+  const toggleSelectRow = (id: string) => {
+    setSelectedRows((prevSelected) =>
+      prevSelected.includes(id)
+        ? prevSelected.filter((rowId) => rowId !== id)
+        : [...prevSelected, id]
+    );
+  };
 
   const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
   const paginatedRows = filteredRows.slice(
@@ -958,9 +969,13 @@ export default function BUSH4() {
       <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[310vh] overflow-hidden w-full rounded-lg ">
         {/* ROTABLE COMPONENT SUMMARY */}
         <div className="rounded-[10px] shadow w-full overflow-x-auto mb-2">
+          <div className="bg-[#00838f] sticky top-0 z-20  text-white text-sm font-bold text-center py-2">
+            ROTABLE COMPONENT SUMMARY
+          </div>
+
           <div className="min-w-[1200px] flex flex-col">
             {/* HEADER TABLE */}
-            <div className="grid grid-cols-11 min-w-[1200px]  whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#00838f]">
+            <div className="grid grid-cols-11 min-w-[1200px]  whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#607d8b]">
               <div className="border-r border-gray-400 py-2 border-r border-gray-300">
                 TYPE A/C
               </div>
@@ -1085,7 +1100,7 @@ export default function BUSH4() {
                   <div className="bg-gray-50 border-b px-2 py-2">
                     <div className="bg-white border border-gray-500 rounded-md text-xs overflow-hidden">
                       {/* HEADER */}
-                      <div className="grid grid-cols-12 bg-gray-500 font-bold text-white text-center px-2 whitespace-normal break-words">
+                      <div className="grid grid-cols-12 bg-[#607d8b] font-bold text-white text-center px-2 whitespace-normal break-words">
                         <div className="col-span-3 py-2">DETAIL ALL ITEM</div>
                         <div className="col-span-1  py-2">STATUS ITEM</div>
                         <div className="col-span-1 py-2">STATUS DOC</div>
@@ -1459,6 +1474,7 @@ export default function BUSH4() {
               { label: 'Incoming', value: 'incoming' },
               { label: 'WIP', value: 'wip' },
               { label: 'FSB', value: 'fsb' },
+              { label: 'WIP + FSB', value: 'wip_fsb' }, // 👈 tambahan
               { label: 'Release', value: 'release' },
             ]}
             className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
@@ -1509,11 +1525,11 @@ export default function BUSH4() {
           <div className="w-[450px] overflow-auto max-h-[80vh]  rounded-lg shadow-inner dark-scroll ">
             <div className="rounded-lg  shadow ">
               <div className="bg-[#00838f] sticky top-0 z-20  text-white text-sm font-bold text-center py-2">
-                PROJECT SUMMARY
+                PROJECT COMPONENT SUMMARY
               </div>
 
               {/* HEADER */}
-              <div className="sticky top-[35px] z-10 grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr] text-xs font-bold text-white bg-[#607d8b] text-center">
+              <div className="sticky top-[35px] z-10  h-6 flex items-center justify-center grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr] text-xs font-bold text-white bg-[#607d8b] text-center">
                 <div>A/C</div>
                 <div>O</div>
                 <div>P</div>
@@ -1540,7 +1556,7 @@ export default function BUSH4() {
                     className={`
                     grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr]
                     place-items-center text-xs text-center border-t
-                    cursor-pointer transition-colors
+                    cursor-pointer transition-colors  h-6 flex items-center justify-center
                   
                     ${
                       filterAcRegs.includes(row.acReg)

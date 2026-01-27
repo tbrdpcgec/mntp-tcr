@@ -14,9 +14,10 @@ export default function Abmp() {
   const [tableData, setTableData] = useState<AbmpRow[]>([]);
   const [loadingTable, setLoadingTable] = useState<boolean>(true);
   const [showModal, setShowModal] = useState(false);
-  const [rows, setRows] = useState<{ ac_reg: string; rts: string | null }[]>([
-    { ac_reg: '', rts: null },
+  const [rows, setRows] = useState<{ ac_reg: string; type_ac: string; rts: string | null }[]>([
+    { ac_reg: '', type_ac: '', rts: null },
   ]);
+  
   const [activeRow, setActiveRow] = useState<number | null>(null);
   const [editingCell, setEditingCell] = useState<{
     id: string;
@@ -94,29 +95,55 @@ export default function Abmp() {
   // ===== UPDATE PDF FROM GOOGLE SHEET =====
   const handleUpdate = async () => {
     try {
+      // ===== 1️⃣ Ambil data dari Google Sheet =====
       const res = await fetch(sheetUrl);
       const text = await res.text();
       const rows = text.split('\n').map((r) => r.split(','));
       const lastRow = rows[rows.length - 1];
-
+  
       if (lastRow && lastRow[2] && lastRow[3]) {
         const dateCol = lastRow[2].trim();
         const pdfCol = lastRow[3].trim();
-
+  
         setPdfId(pdfCol);
         localStorage.setItem('abmpPdfId', pdfCol);
         setLastUpdate(formatDate(dateCol));
-
+  
         setMessage('✅ ABMP updated!');
         setTimeout(() => setMessage(''), 3000);
       } else {
         setMessage('⚠️ Data tidak lengkap di baris terakhir.');
       }
+  
+      // ===== 2️⃣ Update tableData ke Supabase =====
+      // Ambil semua row dari state
+      const payload = tableData.map(({ id, ac_reg, type_ac, rts }) => ({
+        id,
+        ac_reg,
+        type_ac,
+        rts,
+      }));
+  
+      for (const row of payload) {
+        // Update setiap row berdasarkan id
+        const { error } = await supabase
+          .from('abmp')
+          .update({
+            ac_reg: row.ac_reg,
+            type_ac: row.type_ac,
+            rts: row.rts,
+          })
+          .eq('id', row.id);
+  
+        if (error) console.error('Failed to update row', row.id, error.message);
+      }
+  
     } catch (err) {
       console.error(err);
-      setMessage('❌ Gagal mengambil data dari Google Sheet.');
+      setMessage('❌ Gagal mengambil data dari Google Sheet atau update Supabase.');
     }
   };
+  
 
   // ===== FETCH TABLE FROM SUPABASE =====
   const fetchTable = async () => {
@@ -187,13 +214,15 @@ export default function Abmp() {
               <h2 className="text-sm font-bold">Add ABMP Data</h2>
 
               <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="border px-2 py-1">AC REG</th>
-                    <th className="border px-2 py-1">RTS</th>
-                    <th className="border px-2 py-1 w-10">❌</th>
-                  </tr>
-                </thead>
+              <thead>
+  <tr className="bg-gray-100">
+    <th className="border px-2 py-1">AC REG</th>
+    <th className="border px-2 py-1">Type AC</th>  {/* baru */}
+    <th className="border px-2 py-1">RTS</th>
+    <th className="border px-2 py-1 w-10">❌</th>
+  </tr>
+</thead>
+
                 <tbody>
                   {rows.map((row, idx) => (
                     <tr key={idx}>
@@ -212,6 +241,22 @@ export default function Abmp() {
                         "
                         />
                       </td>
+
+                      <td className="border px-1 py-1">
+  <input
+    value={row.type_ac}
+    onChange={(e) => {
+      const copy = [...rows];
+      copy[idx].type_ac = e.target.value;
+      setRows(copy);
+    }}
+    className="
+      w-full border border-transparent
+      hover:border-teal-500 rounded px-1 py-0.5 text-[11px]
+      text-black bg-white
+    "
+  />
+</td>
 
                       <td className="border px-1 py-1">
                         {/* RTS DATE PICKER */}
@@ -248,12 +293,13 @@ export default function Abmp() {
               </table>
 
               <div className="flex justify-between">
-                <button
-                  onClick={() => setRows([...rows, { ac_reg: '', rts: '' }])}
-                  className="text-xs px-2 py-1 bg-blue-500 text-white rounded"
-                >
-                  + Add Row
-                </button>
+              
+<button
+  onClick={() => setRows([...rows, { ac_reg: '', type_ac: '', rts: '' }])}
+  className="text-xs px-2 py-1 bg-blue-500 text-white rounded"
+>
+  + Add Row
+</button>
 
                 <div className="space-x-2">
                   <button
@@ -264,11 +310,14 @@ export default function Abmp() {
                   </button>
                   <button
                     onClick={async () => {
-                      const payload = rows.filter((r) => r.ac_reg && r.rts);
-
-                      if (!payload.length) return;
-
+                      const payload = rows.filter((r) => r.ac_reg && r.rts).map(r => ({
+                        ac_reg: r.ac_reg,
+                        type_ac: r.type_ac,
+                        rts: r.rts
+                      }));
+                      
                       await supabase.from('abmp').insert(payload);
+                      
 
                       setShowModal(false);
                       setRows([{ ac_reg: '', rts: '' }]);
@@ -292,99 +341,180 @@ export default function Abmp() {
           {loadingTable ? (
             <div className="p-2 text-sm text-gray-500">Loading...</div>
           ) : (
+            
+            
             <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr className="bg-[#00919f] text-white text-xs font-semibold text-center">
-                  <th className="border px-2 py-1">No</th>
-                  <th className="border px-2 py-1">AC REG</th>
-                  <th className="border px-2 py-1">RTS</th>
-                </tr>
-              </thead>
+  <thead>
+    <tr className="bg-[#00919f] text-white text-xs font-semibold text-center">
+      <th className="border px-2 py-1">No</th>
+      <th className="border px-2 py-1">AC REG</th>
+      <th className="border px-2 py-1">Type AC</th>
+      <th className="border px-2 py-1">RTS</th>
+    </tr>
+  </thead>
 
-              <tbody>
-  {sortedTableData.map((row, rowIndex) => {
-    const today = new Date();
-    const rtsDate = row.rts ? new Date(row.rts) : null;
-    const isPast = rtsDate && rtsDate < today;
+  <tbody>
+    {sortedTableData.map((row, rowIndex) => {
+      const today = new Date();
+      const rtsDate = row.rts ? new Date(row.rts) : null;
+      const isPast = rtsDate && rtsDate < today;
 
-    return (
-      <tr
-        key={row.id}
-        onClick={() => setActiveRow(row.id)}
-        className={`
-          cursor-pointer
-          ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
-          hover:bg-slate-200
-          ${activeRow === row.id ? 'bg-teal-200' : ''}
-          transition-colors
-        `}
-      >
-        <td className="border px-2 py-1 bg-inherit text-center">{rowIndex + 1}</td>
-        <td className="border px-2 py-1 bg-inherit">{row.ac_reg}</td>
-
-        {/* RTS editable */}
-        <td
-          className={`border px-2 py-1 bg-inherit text-center ${
-            isPast ? 'text-red-600 font-semibold' : ''
-          }`}
-          onClick={() => {
-            setEditingCell({ id: row.id, field: 'rts' });
-            setTempValue(row.rts || '');
-          }}
+      return (
+        <tr
+          key={row.id}
+          onClick={() => setActiveRow(row.id)}
+          className={`
+            cursor-pointer
+            ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
+            hover:bg-slate-200
+            ${activeRow === row.id ? 'bg-teal-200' : ''}
+            transition-colors
+          `}
         >
-          {editingCell?.id === row.id && editingCell?.field === 'rts' ? (
-            <input
-              type="date"
-              value={tempValue}
-              onChange={(e) => setTempValue(e.target.value)}
-              onBlur={() => {
-                // 🔹 Update tableData langsung supaya warna & sorting ikut berubah
-                setTableData((prev) =>
-                  prev.map((r) =>
-                    r.id === row.id ? { ...r, rts: tempValue } : r
-                  )
-                );
+          <td className="border px-2 py-1 bg-inherit text-center">
+            {rowIndex + 1}
+          </td>
 
-                // 🔹 Update backend / Supabase
-                handleUpdate(row.id, 'rts', tempValue);
+          {/* AC REG editable */}
+          <td
+            className="border px-2 py-1 bg-inherit text-center"
+            onClick={() => {
+              setEditingCell({ id: row.id, field: 'ac_reg' });
+              setTempValue(row.ac_reg || '');
+            }}
+          >
+            {editingCell?.id === row.id && editingCell?.field === 'ac_reg' ? (
+              <input
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value.toUpperCase())}
+                onBlur={() => {
+                  setTableData((prev) =>
+                    prev.map((r) =>
+                      r.id === row.id ? { ...r, ac_reg: tempValue } : r
+                    )
+                  );
+                  handleUpdate(row.id, 'ac_reg', tempValue); // 🔹 Supabase update
+                  setEditingCell(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setTableData((prev) =>
+                      prev.map((r) =>
+                        r.id === row.id ? { ...r, ac_reg: tempValue } : r
+                      )
+                    );
+                    handleUpdate(row.id, 'ac_reg', tempValue); // 🔹 Supabase update
+                    setEditingCell(null);
+                  }
+                  if (e.key === 'Escape') setEditingCell(null);
+                }}
+                autoFocus
+                className="w-full bg-transparent px-1 py-0.5 text-[11px] rounded-md border border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 text-center"
+              />
+            ) : (
+              row.ac_reg
+            )}
+          </td>
 
-                setEditingCell(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+          {/* Type AC editable */}
+          <td
+            className="border px-2 py-1 bg-inherit text-center"
+            onClick={() => {
+              setEditingCell({ id: row.id, field: 'type_ac' });
+              setTempValue(row.type_ac || '');
+            }}
+          >
+            {editingCell?.id === row.id && editingCell?.field === 'type_ac' ? (
+              <input
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                onBlur={() => {
+                  setTableData((prev) =>
+                    prev.map((r) =>
+                      r.id === row.id ? { ...r, type_ac: tempValue } : r
+                    )
+                  );
+                  handleUpdate(row.id, 'type_ac', tempValue); // 🔹 Supabase update
+                  setEditingCell(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setTableData((prev) =>
+                      prev.map((r) =>
+                        r.id === row.id ? { ...r, type_ac: tempValue } : r
+                      )
+                    );
+                    handleUpdate(row.id, 'type_ac', tempValue); // 🔹 Supabase update
+                    setEditingCell(null);
+                  }
+                  if (e.key === 'Escape') setEditingCell(null);
+                }}
+                autoFocus
+                className="w-full bg-transparent px-1 py-0.5 text-[11px] rounded-md border border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 text-center"
+              />
+            ) : (
+              row.type_ac || '-'
+            )}
+          </td>
+
+          {/* RTS editable */}
+          <td
+            className={`border px-2 py-1 bg-inherit text-center ${
+              isPast ? 'text-red-600 font-semibold' : ''
+            }`}
+            onClick={() => {
+              setEditingCell({ id: row.id, field: 'rts' });
+              setTempValue(row.rts || '');
+            }}
+          >
+            {editingCell?.id === row.id && editingCell?.field === 'rts' ? (
+              <input
+                type="date"
+                value={tempValue}
+                onChange={(e) => setTempValue(e.target.value)}
+                onBlur={() => {
                   setTableData((prev) =>
                     prev.map((r) =>
                       r.id === row.id ? { ...r, rts: tempValue } : r
                     )
                   );
-                  handleUpdate(row.id, 'rts', tempValue);
+                  handleUpdate(row.id, 'rts', tempValue); // 🔹 Supabase update
                   setEditingCell(null);
-                }
-                if (e.key === 'Escape') {
-                  setEditingCell(null);
-                }
-              }}
-              autoFocus
-              className="w-full bg-transparent px-1 py-0.5 text-[11px] rounded-md border border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 text-center"
-            />
-          ) : rtsDate ? (
-            rtsDate
-              .toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-              })
-              .replace(/ /g, '-')
-          ) : (
-            ''
-          )}
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setTableData((prev) =>
+                      prev.map((r) =>
+                        r.id === row.id ? { ...r, rts: tempValue } : r
+                      )
+                    );
+                    handleUpdate(row.id, 'rts', tempValue); // 🔹 Supabase update
+                    setEditingCell(null);
+                  }
+                  if (e.key === 'Escape') setEditingCell(null);
+                }}
+                autoFocus
+                className="w-full bg-transparent px-1 py-0.5 text-[11px] rounded-md border border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 text-center"
+              />
+            ) : rtsDate ? (
+              rtsDate
+                .toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })
+                .replace(/ /g, '-')
+            ) : (
+              ''
+            )}
+          </td>
+        </tr>
+      );
+    })}
+  </tbody>
+</table>
 
-            </table>
+
           )}
         </div>
 
