@@ -1,17 +1,19 @@
 // src/layouts/ProtectedLayout.tsx
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProtectedLayout() {
-  const { session, loading } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (loading) return null;
-
-  // ❌ belum login → tampilkan area hitam saja
-  if (!session) {
-    return <div className="flex-1 bg-black" />;
+  if (loading) {
+    return <div className="p-4">Checking auth...</div>;
   }
 
-  // ✅ sudah login → render halaman
+  // ❌ belum login
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // ✅ sudah login
   return <Outlet />;
 }
