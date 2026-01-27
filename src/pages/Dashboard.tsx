@@ -1642,10 +1642,11 @@ export default function BUSH4() {
                   </th>
 
                   {/* KOLOM LAIN */}
-                  <th className="px-1 py-1 min-w-[90px]">STATUS ITEM</th>
                   <th className="px-1 py-1 min-w-[60px]">DATE IN</th>
-                  <th className="px-1 py-1  min-w-[100px]">DOC STATUS</th>
                   <th className="px-1 py-1">PRIORITY</th>
+                  <th className="px-1 py-1 min-w-[90px]">STATUS ITEM</th>
+                  <th className="px-1 py-1  min-w-[100px]">STATUS DOC</th>
+                  <th className="px-1 py-1  min-w-[100px]">STATUS MAT</th>
                   <th className="px-1 py-1  min-w-[90px]">STATUS JOB</th>
                   <th className="px-1 py-1">PLAN FSB</th>
                   <th className="px-1 py-1   min-w-[100px]">REMARK SHOP</th>
@@ -1738,13 +1739,8 @@ export default function BUSH4() {
                       </div>
                     </td>
 
-                    {/* LOCATION */}
-                    <td className="border px-1 py-1 text-center">
-                      {row.location || ''}
-                    </td>
-
-                    {/* DATE IN */}
-                    <td className="border px-3 py-1 text-center">
+{/* DATE IN */}
+<td className="border px-3 py-1 text-center">
                       {row.date_in
                         ? new Date(row.date_in).toLocaleDateString('en-GB', {
                             day: '2-digit',
@@ -1753,6 +1749,18 @@ export default function BUSH4() {
                           })
                         : ''}
                     </td>
+
+                    {/* PRIORITY */}
+                    <td className="border px-1 py-1 text-center">
+                      {row.priority || ''}
+                    </td>
+
+                    {/* LOCATION */}
+                    <td className="border px-1 py-1 text-center">
+                      {row.location || ''}
+                    </td>
+
+                    
 
                     {/* DOC STATUS */}
                     <td className="border px-1 py-1 text-center ">
@@ -1772,10 +1780,11 @@ export default function BUSH4() {
                       </span>
                     </td>
 
-                    {/* PRIORITY */}
-                    <td className="border px-1 py-1 text-center">
-                      {row.priority || ''}
+{/* MATERIAL */}
+<td className="border px-1 py-1 text-center">
+                      {row.remark_mat || ''}
                     </td>
+                    
 
                     {/* STATUS JOB */}
                     <td className="border px-1 py-1 text-center">
