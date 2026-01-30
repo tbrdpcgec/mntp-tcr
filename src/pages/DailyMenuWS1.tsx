@@ -92,8 +92,6 @@ const COLUMN_ORDER: { key: string; label: string }[] = [
   { key: 'doc_status', label: 'Doc Status' },
   { key: 'remark_mat', label: 'Material' },
   { key: 'priority', label: 'Priority' },
-  
-  { key: 'est_date', label: 'Est Finish' },
   { key: 'remark', label: 'Remark' },
   { key: 'cek_sm1', label: 'TCR-1' },
   { key: 'cek_cs1', label: 'TCR-2' },
@@ -110,6 +108,7 @@ const COLUMN_ORDER: { key: string; label: string }[] = [
   { key: 'shop', label: 'Shop' },
 
   { key: 'remark_pro', label: 'Remark from Shop' },
+  { key: 'est_date', label: 'Est Finish' },
   { key: 'remark_bdp', label: 'Remark BDP' },
   { key: 'tracking_sp', label: 'Tracking SP' },
   { key: 'link_scan', label: 'Link Scanned' },
@@ -278,6 +277,7 @@ const sortOptions = [
   { value: 'doc_type', label: 'Doc Type' },
   { value: 'date_in', label: 'Date In' },
   { value: 'doc_status', label: 'Doc Status' },
+  { value: 'pds_no', label: 'PDS No.' },
 ];
 
 type OrderFilter = {
@@ -309,6 +309,7 @@ export default function BUSH4() {
   const [filterStatusJob, setFilterStatusJob] = useState('');
   const [filterPriority, setFilterPriority] = useState('All');
 
+  const [filterDocType, setFilterDocType] = useState('');
   const [filterLocation, setFilterLocation] = useState('');
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState('');
@@ -931,6 +932,9 @@ export default function BUSH4() {
     .filter((row) => {
       if (showOnlyChecked && !selectedRows.includes(row.id)) return false;
 
+      const matchesDocType =
+        filterDocType === '' || row.doc_type === filterDocType;
+
       // khusus filter order multiple
       const matchesOrder =
         filterOrders.length === 0 ||
@@ -964,7 +968,8 @@ export default function BUSH4() {
         matchesStatusJob &&
         matchesPriority &&
         matchesMaterial &&
-        matchesLocation
+        matchesLocation &&
+        matchesDocType
       );
     })
 
@@ -1191,6 +1196,19 @@ export default function BUSH4() {
               )}
             </div>
           </div>
+
+          <CustomSelect
+            value={filterDocType}
+            onChange={(e) => setFilterDocType(e.target.value)}
+            options={[
+              { label: 'All Doc Type', value: '' },
+              ...DOC_TYPES.map((type) => ({
+                label: type,
+                value: type,
+              })),
+            ]}
+            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
+          />
 
           <CustomSelect
             value={filterPriority}

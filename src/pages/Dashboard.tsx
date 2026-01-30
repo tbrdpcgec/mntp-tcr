@@ -224,6 +224,7 @@ export default function BUSH4() {
   const [filterBase, setFilterBase] = useState('');
   const [filterPriority, setFilterPriority] = useState('All');
   const [filterLocation, setFilterLocation] = useState('');
+  const [filterDocType, setFilterDocType] = useState('');
 
   const [priorityData, setPriorityData] = useState<any[]>([]);
   const [filterW, setFilterW] = useState('');
@@ -542,7 +543,11 @@ export default function BUSH4() {
   const filteredRows = rows
     .filter((row) => {
       if (showOnlyChecked && !selectedRows.includes(row.id)) return false;
-
+      
+      const matchesDocType =
+      filterDocType === '' || row.doc_type === filterDocType;
+    
+    
       // khusus filter order multiple
       const matchesOrder =
         filterOrders.length === 0 ||
@@ -562,7 +567,7 @@ export default function BUSH4() {
 
       const matchesAcReg =
         filterAcRegs.length === 0 || filterAcRegs.includes(row.ac_reg);
-
+      
       const matchesPriority =
         filterPriority === 'All' ? true : row.priority === filterPriority;
       const matchesDocStatus =
@@ -607,7 +612,8 @@ export default function BUSH4() {
         matchesW &&
         matchesPriority &&
         matchesPn &&
-        matchesLocation
+        matchesLocation &&
+        matchesDocType
       );
     })
 
@@ -1436,6 +1442,20 @@ export default function BUSH4() {
               )}
             </div>
           </div>
+
+          <CustomSelect
+  value={filterDocType}
+  onChange={(e) => setFilterDocType(e.target.value)}
+  options={[
+    { label: 'All Doc Type', value: '' },
+    ...DOC_TYPES.map((type) => ({
+      label: type,
+      value: type,
+    })),
+  ]}
+  className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
+/>
+
 
           <CustomSelect
             value={filterPriority}
