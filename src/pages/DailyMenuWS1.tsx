@@ -92,6 +92,8 @@ const COLUMN_ORDER: { key: string; label: string }[] = [
   { key: 'doc_status', label: 'Doc Status' },
   { key: 'remark_mat', label: 'Material' },
   { key: 'priority', label: 'Priority' },
+  
+  { key: 'est_date', label: 'Est Finish' },
   { key: 'remark', label: 'Remark' },
   { key: 'cek_sm1', label: 'TCR-1' },
   { key: 'cek_cs1', label: 'TCR-2' },
@@ -108,7 +110,6 @@ const COLUMN_ORDER: { key: string; label: string }[] = [
   { key: 'shop', label: 'Shop' },
 
   { key: 'remark_pro', label: 'Remark from Shop' },
-  { key: 'est_date', label: 'Est Finish' },
   { key: 'remark_bdp', label: 'Remark BDP' },
   { key: 'tracking_sp', label: 'Tracking SP' },
   { key: 'link_scan', label: 'Link Scanned' },

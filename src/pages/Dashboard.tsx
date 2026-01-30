@@ -106,7 +106,7 @@ const COLUMN_ORDER: { key: string; label: string }[] = [
   { key: 'date_in', label: 'Date In' },
   { key: 'priority', label: 'Priority' },
   { key: 'doc_status', label: 'Doc Status' },
-  { key: 'remark_mat', label: 'Material' },
+  { key: 'remark_mat', label: 'Status BDP' },
 
   { key: 'status_job', label: 'Status Job' },
   { key: 'remark', label: 'Remark' },
@@ -760,7 +760,7 @@ export default function BUSH4() {
       category: 'WINDOW',
       description: 'WINDSHIELD ASSY',
       shop: 'SHEETMETAL',
-      safetyStock: 2,
+      safetyStock: 4,
       nextFsb: 'FSB-01234', // optional, bisa '-'
     },
     {
@@ -819,10 +819,8 @@ export default function BUSH4() {
         r.doc_type === 'PDS' && r.archived === false && r.pn?.includes(pn.match)
     );
 
-    const remain = rows.filter((r) => r.location === 'OUTGOING').length;
-    const wip = rows.filter((r) =>
-      ['DEPLOYED', 'INCOMING'].includes(r.location)
-    ).length;
+    const remain = rows.filter((r) => r.location === 'FSB').length;
+    const wip = rows.filter((r) => ['WIP'].includes(r.location)).length;
     const incoming = rows.filter((r) => r.location === 'INCOMING').length;
 
     // =========================
@@ -1671,7 +1669,7 @@ export default function BUSH4() {
                   <th className="px-1 py-1 ">ITEM</th>
                   <th className="px-1 py-1 min-w-[90px]">SHOP</th>
                   <th className="px-1 py-1  min-w-[100px]">STATUS DOC</th>
-                  <th className="px-1 py-1 ">MATERIAL</th>
+                  <th className="px-1 py-1 min-w-[90px]">STATUS BDP</th>
                   <th className="px-1 py-1  min-w-[90px]">STATUS JOB</th>
                   <th className="px-1 py-1">PLAN FSB</th>
                   <th className="px-1 py-1   min-w-[250px]">REMARK SHOP</th>
