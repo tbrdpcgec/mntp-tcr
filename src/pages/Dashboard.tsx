@@ -246,7 +246,7 @@ export default function BUSH4() {
   const [confirmMessage, setConfirmMessage] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 30;
+  const rowsPerPage = 100;
 
   // filter ac reg
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -530,6 +530,15 @@ export default function BUSH4() {
   /////row raw
   const rawRows = rows;
 
+  // ==============================
+  // ROTABLE VISIBLE ROWS
+  // ==============================
+  const rotableBaseRows = useMemo(() => {
+    return rawRows.filter((r) =>
+      ['WIP', 'INCOMING', 'FSB'].includes((r.location || '').toUpperCase())
+    );
+  }, [rawRows]);
+
   const filteredRows = rows
     .filter((row) => {
       if (showOnlyChecked && !selectedRows.includes(row.id)) return false;
@@ -756,7 +765,7 @@ export default function BUSH4() {
     {
       label: '141A4810-*',
       match: '141A4810-',
-      typeAc: 'A320',
+      typeAc: 'B737',
       category: 'WINDOW',
       description: 'WINDSHIELD ASSY',
       shop: 'SHEETMETAL',
@@ -814,7 +823,7 @@ export default function BUSH4() {
   };
   /////////////
   const rotableSummary = pnList.map((pn) => {
-    const rows = rawRows.filter(
+    const rows = rotableBaseRows.filter(
       (r) =>
         r.doc_type === 'PDS' && r.archived === false && r.pn?.includes(pn.match)
     );
@@ -967,7 +976,7 @@ export default function BUSH4() {
   /////ini return
   return (
     <div className="bg-[#141414] w-full h-full">
-      <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[350vh] overflow-hidden w-full rounded-lg ">
+      <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[590vh] overflow-hidden w-full rounded-lg ">
         {/* ROTABLE COMPONENT SUMMARY */}
         <div className="rounded-[10px] shadow w-full overflow-x-auto mb-2">
           <div className="bg-[#00838f] sticky top-0 z-20  text-white text-sm font-bold text-center py-2">
