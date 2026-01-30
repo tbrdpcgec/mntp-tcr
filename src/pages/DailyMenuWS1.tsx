@@ -267,7 +267,7 @@ const getStatusJob = (row: Row): string => {
   return '';
 };
 
-export const MATERIAL_OPTIONS = ['LISTING', 'WAITING', 'DEPLOYED'];
+export const MATERIAL_OPTIONS = ['NO NEED', 'LISTING', 'WAITING', 'DEPLOYED'];
 
 const sortOptions = [
   { value: 'ac_reg', label: 'A/C Reg' },

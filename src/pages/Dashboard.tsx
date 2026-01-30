@@ -234,6 +234,7 @@ export default function BUSH4() {
   const [showCheckboxColumn, setShowCheckboxColumn] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [activePn, setActivePn] = useState<string[]>([]);
 
   const [projectRows, setProjectRows] = useState<any[]>([]);
   const [abmpRows, setAbmpRows] = useState<any[]>([]);
@@ -245,7 +246,7 @@ export default function BUSH4() {
   const [confirmMessage, setConfirmMessage] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 100;
+  const rowsPerPage = 30;
 
   // filter ac reg
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -258,6 +259,7 @@ export default function BUSH4() {
 
   const [showOrderSuggestions, setShowOrderSuggestions] = useState(false);
   const [expandedPn, setExpandedPn] = useState<string[]>([]);
+  const [isScreenshot, setIsScreenshot] = useState(false);
 
   useEffect(() => {
     if (orderInput.trim() === '') {
@@ -862,6 +864,7 @@ export default function BUSH4() {
     };
   });
 
+  //toglepn rotable
   const togglePn = (pn: string) => {
     setExpandedPn(
       (prev) =>
@@ -966,7 +969,7 @@ export default function BUSH4() {
   /////ini return
   return (
     <div className="bg-[#141414] w-full h-full">
-      <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[310vh] overflow-hidden w-full rounded-lg ">
+      <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[350vh] overflow-hidden w-full rounded-lg ">
         {/* ROTABLE COMPONENT SUMMARY */}
         <div className="rounded-[10px] shadow w-full overflow-x-auto mb-2">
           <div className="bg-[#00838f] sticky top-0 z-20  text-white text-sm font-bold text-center py-2">
@@ -1517,6 +1520,13 @@ export default function BUSH4() {
             ]}
             className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
           />
+
+          <button
+            onClick={() => setIsScreenshot((v) => !v)}
+            className="px-3 py-1 text-xs bg-slate-700 text-white rounded hover:bg-slate-600"
+          >
+            {isScreenshot ? 'Expand' : 'Collapse'}
+          </button>
         </div>
 
         {/* 📊 Status Summary dan Donut Chart */}
@@ -1529,7 +1539,7 @@ export default function BUSH4() {
               </div>
 
               {/* HEADER */}
-              <div className="sticky top-[35px] z-10  h-6 flex items-center justify-center grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr] text-xs font-bold text-white bg-[#607d8b] text-center">
+              <div className="sticky top-[35px] z-10 h-6 flex items-center justify-center grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr] text-xs font-bold text-white bg-[#607d8b] text-center">
                 <div>A/C</div>
                 <div>O</div>
                 <div>P</div>
@@ -1556,7 +1566,7 @@ export default function BUSH4() {
                     className={`
                     grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr]
                     place-items-center text-xs text-center border-t
-                    cursor-pointer transition-colors  h-6 flex items-center justify-center
+                    cursor-pointer transition-colors  h-8 flex items-center justify-center
                   
                     ${
                       filterAcRegs.includes(row.acReg)
@@ -1607,10 +1617,26 @@ export default function BUSH4() {
           </div>
 
           {/* 🧊 Ini pembungkus baru untuk freeze header */}
-          <div className="w-full overflow-auto max-h-[80vh]  rounded-lg shadow-inner dark-scroll">
-            <table className="w-full table-auto text-[11px]  leading-tight ">
-              <thead className="sticky top-0 z-0 bg-teal-700 shadow">
-                <tr className="bg-[#00919f] text-white text-xs font-semibold text-center">
+          <div
+            className={`print-area w-full rounded-lg shadow-inner dark-scroll
+    ${
+      isScreenshot
+        ? 'overflow-visible max-h-none'
+        : 'overflow-auto max-h-[80vh]'
+    }
+  `}
+          >
+            <div className="bg-[#00838f] sticky top-0 z-20  text-white text-sm font-bold text-center py-2">
+              PROJECT COMPONENT DETAIL
+            </div>
+
+            <table className="w-full table-auto text-[12px] leading-tight">
+              <thead
+                className={`bg-teal-700 shadow
+        ${isScreenshot ? 'static' : 'sticky top-0 z-0'}
+      `}
+              >
+                <tr className="sticky top-[35px] z-10 h-6 bg-[#607d8b] text-white text-xs font-semibold text-center">
                   {/* NO */}
                   <th className=" px-2 py-1 text-center w-[40px]">No</th>
 
@@ -1634,24 +1660,23 @@ export default function BUSH4() {
                   )}
 
                   {/* DOC TYPE */}
-                  <th className=" px-2 py-1 text-center w-[90px]">Doc</th>
-                  <th className=" px-2 py-1 text-center w-[90px]">A/C Reg</th>
+                  <th className=" px-2 py-1 text-center">Doc</th>
+                  <th className=" px-2 py-1 text-center">A/C Reg</th>
                   {/* IDENTIFICATION */}
-                  <th className="px-2 py-1 text-left min-w-[300px]">
+                  <th className="px-2 py-1 text-left min-w-[440px]">
                     IDENTIFICATION
                   </th>
 
                   {/* KOLOM LAIN */}
-                  <th className="px-1 py-1 min-w-[60px]">DATE IN</th>
-                  <th className="px-1 py-1">PRIORITY</th>
-                  <th className="px-1 py-1 min-w-[90px]">STATUS ITEM</th>
+                  <th className="px-1 py-1 ">ITEM</th>
+                  <th className="px-1 py-1 min-w-[90px]">SHOP</th>
                   <th className="px-1 py-1  min-w-[100px]">STATUS DOC</th>
-                  <th className="px-1 py-1  min-w-[100px]">STATUS MAT</th>
+                  <th className="px-1 py-1 ">MATERIAL</th>
                   <th className="px-1 py-1  min-w-[90px]">STATUS JOB</th>
                   <th className="px-1 py-1">PLAN FSB</th>
-                  <th className="px-1 py-1   min-w-[100px]">REMARK SHOP</th>
+                  <th className="px-1 py-1   min-w-[250px]">REMARK SHOP</th>
                   <th className="px-1 py-1  min-w-[120px]">REMARK PE/PPC</th>
-                  <th className="px-1 py-1">TRACKING SHIPMENT</th>
+                  <th className="px-1 py-1 min-w-[400px]">TRACKING SHIPMENT</th>
                   <th className="px-1 py-1 min-w-[90px]">LINK SCAN </th>
                   {/* lanjutkan sesuai kebutuhan */}
                 </tr>
@@ -1722,11 +1747,9 @@ export default function BUSH4() {
 
                         {/* BARIS 3 */}
                         {(() => {
-                          const metaLine = [
-                            row.type_ac,
-                            row.category,
-                            row.shop,
-                          ].filter(Boolean);
+                          const metaLine = [row.type_ac, row.category].filter(
+                            Boolean
+                          );
 
                           return (
                             metaLine.length > 0 && (
@@ -1739,28 +1762,15 @@ export default function BUSH4() {
                       </div>
                     </td>
 
-{/* DATE IN */}
-<td className="border px-3 py-1 text-center">
-                      {row.date_in
-                        ? new Date(row.date_in).toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })
-                        : ''}
-                    </td>
-
-                    {/* PRIORITY */}
-                    <td className="border px-1 py-1 text-center">
-                      {row.priority || ''}
-                    </td>
-
                     {/* LOCATION */}
                     <td className="border px-1 py-1 text-center">
                       {row.location || ''}
                     </td>
 
-                    
+                    {/* LOCATION */}
+                    <td className="border px-1 py-1 text-center">
+                      {row.shop || ''}
+                    </td>
 
                     {/* DOC STATUS */}
                     <td className="border px-1 py-1 text-center ">
@@ -1780,11 +1790,10 @@ export default function BUSH4() {
                       </span>
                     </td>
 
-{/* MATERIAL */}
-<td className="border px-1 py-1 text-center">
+                    {/* MATERIAL */}
+                    <td className="border px-1 py-1 text-center">
                       {row.remark_mat || ''}
                     </td>
-                    
 
                     {/* STATUS JOB */}
                     <td className="border px-1 py-1 text-center">
