@@ -811,7 +811,7 @@ export default function BUSH4() {
       category: 'RADOME',
       description: 'NOSE RADOME',
       shop: 'COMPOSITE',
-      safetyStock: 2,
+      safetyStock: 1,
       nextFsb: '-',
     },
   ];
