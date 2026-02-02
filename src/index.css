@@ -43,3 +43,21 @@ body,
 .dark-scroll::-webkit-scrollbar-thumb:hover {
   background-color: #52525b;
 }
+
+
+.rotate-header {
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.grid-cell {
+  @apply flex items-center justify-center h-full w-full;
+}
+

@@ -57,6 +57,29 @@ const docStatusColors = [
   '#818cf8',
 ];
 
+const ClosedBar = ({ closed, total }: { closed: number; total: number }) => {
+  const percent = total > 0 ? Math.round((closed / total) * 100) : 0;
+
+  let color = 'bg-red-500';
+  if (percent >= 100) color = 'bg-green-500';
+  else if (percent >= 50) color = 'bg-yellow-400';
+
+  return (
+    <div className="w-full flex items-center gap-1 px-1">
+      <div className="relative w-full h-6 bg-red-300 ">
+        <div
+          className={`h-6 ${color} flex items-center justify-center text-[11px] font-bold text-black`}
+          style={{ width: `${Math.min(percent, 100)}%` }}
+        >
+          {percent}%
+        </div>
+      </div>
+    </div>
+  );
+};
+
+//fsb
+
 const columnWidths: Record<string, string> = {
   ac_reg: 'min-w-[200px]',
   description: 'min-w-[350px]',
@@ -212,6 +235,10 @@ type OrderFilter = {
   valid: boolean;
 };
 
+const gridCols =
+  'grid-cols-[70px_28px_28px_28px_38px_28px_28px_28px_28px_28px_90px_72px_90px_90px_90px]';
+
+///inistate
 export default function BUSH4() {
   const [rows, setRows] = useState<Row[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -543,11 +570,10 @@ export default function BUSH4() {
   const filteredRows = rows
     .filter((row) => {
       if (showOnlyChecked && !selectedRows.includes(row.id)) return false;
-      
+
       const matchesDocType =
-      filterDocType === '' || row.doc_type === filterDocType;
-    
-    
+        filterDocType === '' || row.doc_type === filterDocType;
+
       // khusus filter order multiple
       const matchesOrder =
         filterOrders.length === 0 ||
@@ -567,7 +593,7 @@ export default function BUSH4() {
 
       const matchesAcReg =
         filterAcRegs.length === 0 || filterAcRegs.includes(row.ac_reg);
-      
+
       const matchesPriority =
         filterPriority === 'All' ? true : row.priority === filterPriority;
       const matchesDocStatus =
@@ -892,16 +918,16 @@ export default function BUSH4() {
   const getStockStatus = (remain: number, safety: number) => {
     // 1️⃣ jika benar-benar habis
     if (remain === 0) {
-      return { label: 'NIL', color: 'text-red-600 bg-red-200' };
+      return { label: 'NIL', color: 'text-black bg-red-500' };
     }
 
     // 2️⃣ stok ada tapi di bawah safety
     if (remain < safety) {
-      return { label: 'CRITICAL', color: 'text-yellow-600 bg-yellow-100' };
+      return { label: 'CRITICAL', color: 'text-black bg-yellow-500' };
     }
 
     // 3️⃣ stok aman
-    return { label: 'SAFE', color: 'text-green-700 bg-green-100' };
+    return { label: 'SAFE', color: 'text-black bg-green-500' };
   };
 
   ////blok pn
@@ -915,6 +941,17 @@ export default function BUSH4() {
     return uniqAcReg.map((acReg, index) => {
       const rowsByAc = rawRows.filter((r) => r.ac_reg === acReg);
 
+      const planFsb = (() => {
+        const dates = rowsByAc
+          .filter((r) => r.est_date && !isNaN(new Date(r.est_date).getTime()))
+          .map((r) => new Date(r.est_date).getTime());
+
+        if (dates.length === 0) return null;
+
+        return new Date(Math.max(...dates));
+      })();
+
+      // ================= STATUS JOB =================
       const open = rowsByAc.filter((r) => r.status_job === 'OPEN').length;
       const progress = rowsByAc.filter(
         (r) => r.status_job === 'PROGRESS'
@@ -923,17 +960,63 @@ export default function BUSH4() {
 
       const totalOrder = open + progress + closed;
 
+      // ================= LOCATION SUMMARY =================
+      const awaiting = rowsByAc.filter(
+        (r) => r.location?.toLowerCase().trim() === 'awaiting'
+      ).length;
+
+      const incoming = rowsByAc.filter(
+        (r) => r.location?.toLowerCase().trim() === 'incoming'
+      ).length;
+
+      const wip = rowsByAc.filter(
+        (r) => r.location?.toLowerCase().trim() === 'wip'
+      ).length;
+
+      const fsb = rowsByAc.filter(
+        (r) => r.location?.toLowerCase().trim() === 'fsb'
+      ).length;
+
+      const release = rowsByAc.filter(
+        (r) => r.location?.toLowerCase().trim() === 'release'
+      ).length;
+
       // ✅ RTS langsung dari VIEW (mntp_tcr_view)
       const rts = rowsByAc[0]?.rts ?? '-';
+
+      // ===== 🔥 UIC (UNIQUE SHOP) =====
+      // ===== 🔥 UIC SHOP SUMMARY =====
+      const uicShops = Array.from(
+        new Set(
+          rowsByAc
+            .flatMap((r) =>
+              r.shop ? r.shop.split(' / ').map((s: string) => s.trim()) : []
+            )
+            .filter(Boolean)
+        )
+      ).join(' / ');
 
       return {
         no: index + 1,
         acReg,
+
+        // status job
         open,
         progress,
         closed,
         totalOrder,
+
+        // location flow
+        awaiting,
+        incoming,
+        wip,
+        fsb,
+        release,
+
+        // dates
         rts,
+        planFsb,
+        uic: uicShops || 'PE/PPC', // fallback kalau kosong
       };
     });
   }, [rawRows]);
@@ -983,15 +1066,22 @@ export default function BUSH4() {
   return (
     <div className="bg-[#141414] w-full h-full">
       <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[590vh] overflow-hidden w-full rounded-lg ">
-        {/* ROTABLE COMPONENT SUMMARY */}
-        <div className="rounded-[10px] shadow w-full overflow-x-auto mb-2">
-          <div className="bg-[#00838f] sticky top-0 z-20  text-white text-sm font-bold text-center py-2">
-            ROTABLE COMPONENT SUMMARY
-          </div>
+        {/* ================= ROTABLE COMPONENT SUMMARY ================= */}
+<div className="w-full mb-2">
 
-          <div className="min-w-[1200px] flex flex-col">
+{/* ===== TITLE (FIX, TIDAK IKUT SCROLL) ===== */}
+<div className="bg-transparent text-md font-bold text-gray-400 text-center py-2 rounded-t-[10px] shadow">
+  ROTABLE COMPONENT SUMMARY
+</div>
+
+{/* ===== SCROLL AREA ===== */}
+<div className="rounded-lg shadow-inner overflow-x-auto">
+
+  {/* TABLE WRAPPER */}
+  <div className="min-w-[1200px] flex flex-col">
+
             {/* HEADER TABLE */}
-            <div className="grid grid-cols-11 min-w-[1200px]  whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#607d8b]">
+            <div className=" grid grid-cols-11 min-w-[1200px]  whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#00838f]">
               <div className="border-r border-gray-400 py-2 border-r border-gray-300">
                 TYPE A/C
               </div>
@@ -1256,6 +1346,8 @@ export default function BUSH4() {
             ))}
           </div>
         </div>
+        
+        </div>
 
         <div className="mb-2 flex items-start gap-2 overflow-hidden">
           {/* Kotak input + chips */}
@@ -1444,18 +1536,17 @@ export default function BUSH4() {
           </div>
 
           <CustomSelect
-  value={filterDocType}
-  onChange={(e) => setFilterDocType(e.target.value)}
-  options={[
-    { label: 'All Doc Type', value: '' },
-    ...DOC_TYPES.map((type) => ({
-      label: type,
-      value: type,
-    })),
-  ]}
-  className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
-/>
-
+            value={filterDocType}
+            onChange={(e) => setFilterDocType(e.target.value)}
+            options={[
+              { label: 'All Doc Type', value: '' },
+              ...DOC_TYPES.map((type) => ({
+                label: type,
+                value: type,
+              })),
+            ]}
+            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
+          />
 
           <CustomSelect
             value={filterPriority}
@@ -1523,31 +1614,6 @@ export default function BUSH4() {
             className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
           />
 
-          {/* Sort By */}
-          <CustomSelect
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value)}
-            options={[
-              { label: 'Sort by...', value: '' },
-              ...sortOptions.map((option) => ({
-                label: option.label,
-                value: option.value,
-              })),
-            ]}
-            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
-          />
-
-          {/* Sort Direction */}
-          <CustomSelect
-            value={sortDirection}
-            onChange={(e) => setSortDirection(e.target.value as 'asc' | 'desc')}
-            options={[
-              { label: 'A-Z', value: 'asc' },
-              { label: 'Z-A', value: 'desc' },
-            ]}
-            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
-          />
-
           <button
             onClick={() => setIsScreenshot((v) => !v)}
             className="px-3 py-1 text-xs bg-slate-700 text-white rounded hover:bg-slate-600"
@@ -1556,114 +1622,217 @@ export default function BUSH4() {
           </button>
         </div>
 
+
         {/* 📊 Status Summary dan Donut Chart */}
-        <div className="flex gap-2 w-full items-start mb-3 overflow-hidden">
-          {/* ================= PROSUM (KIRI) ================= */}
-          <div className="w-[450px] overflow-auto max-h-[80vh]  rounded-lg shadow-inner dark-scroll ">
-            <div className="rounded-lg  shadow ">
-              <div className="bg-[#00838f] sticky top-0 z-20  text-white text-sm font-bold text-center py-2">
-                PROJECT COMPONENT SUMMARY
-              </div>
+        <div
+  className={`flex gap-2 w-full items-start mb-3
+    ${isScreenshot ? 'overflow-visible' : 'overflow-hidden'}
+  `}
+>
+
+
+          
+        {/* ===== WRAPPER UTAMA ===== */}
+<div className="w-[600px]  flex-none">
+
+{/* ===== TITLE (DI ATAS, TIDAK IKUT SCROLL) ===== */}
+<div className="bg-transparent text-gray-400 text-md font-bold text-center py-1 rounded-t-lg shadow">
+  PROJECT COMPONENT SUMMARY
+</div>
+
+  {/* ===== AREA TABLE (SCROLL / SCREENSHOT) ===== */}
+  <div
+    className={`rounded-lg shadow-inner dark-scroll
+      ${
+        isScreenshot
+          ? 'overflow-visible max-h-none'
+          : 'overflow-x-auto overflow-y-auto max-h-[76vh]'
+      }
+    `}
+  >
+    <div
+  className={`
+    rounded-lg shadow
+    ${isScreenshot ? 'w-full' : 'min-w-max'}
+  `}
+>
 
               {/* HEADER */}
-              <div className="sticky top-[35px] z-10 h-6 flex items-center justify-center grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr] text-xs font-bold text-white bg-[#607d8b] text-center">
-                <div>A/C</div>
-                <div>O</div>
-                <div>P</div>
-                <div>C</div>
-                <div>Total</div>
-                <div>RTS</div>
-                <div>TAT</div>
-              </div>
+              <div
+  className={`
+    sticky top-[0px] z-20
+    grid ${gridCols}
+    h-7 text-xs font-bold text-white text-center
+    bg-[#00838f]
+  `}
+>
+  {/* BASIC */}
+  <div className="grid-cell">A/C</div>
+
+  {/* STATUS */}
+  <div className="grid-cell bg-red-600">O</div>
+  <div className="grid-cell bg-yellow-600">P</div>
+  <div className="grid-cell bg-green-600">C</div>
+  <div className="grid-cell bg-[#0277bd]">Total</div>
+
+  {/* LOCATION */}
+  <div className="rotate-header bg-teal-600">AWT</div>
+  <div className="rotate-header bg-teal-600">INC</div>
+  <div className="rotate-header bg-teal-600">WIP</div>
+  <div className="rotate-header bg-teal-600">FSB</div>
+  <div className="rotate-header bg-teal-600">REL</div>
+
+  {/* DATE / KPI */}
+  <div className="grid-cell">PLAN RTS</div>
+  <div className="grid-cell">D-DAY</div>
+  <div className="grid-cell">%</div>
+  <div className="grid-cell">PLAN FSB</div>
+  <div className="grid-cell bg-[#0277bd]">UIC</div>
+</div>
 
               {/* ROWS */}
               {sortedProjectSummary.map((row, index) => {
-                const remain = getRemainDays(row.rts);
+  const remain = getRemainDays(row.rts);
 
-                return (
-                  <div
-                    key={row.acReg}
-                    onClick={() =>
-                      setFilterAcRegs((prev) =>
-                        prev.includes(row.acReg)
-                          ? prev.filter((ac) => ac !== row.acReg)
-                          : [...prev, row.acReg]
-                      )
-                    }
-                    className={`
-                    grid grid-cols-[90px_1fr_1fr_1fr_2fr_90px_2fr]
-                    place-items-center text-xs text-center border-t
-                    cursor-pointer transition-colors  h-8 flex items-center justify-center
-                  
-                    ${
-                      filterAcRegs.includes(row.acReg)
-                        ? 'bg-teal-200 dark:bg-teal-700'
-                        : index % 2 === 0
-                        ? 'bg-white dark:bg-slate-800'
-                        : 'bg-gray-100 dark:bg-slate-700'
-                    }
-                  
-                    hover:bg-slate-200 dark:hover:bg-slate-600
-                  `}
-                  >
-                    <div className="text-gray-600 font-bold ">{row.acReg}</div>
-                    <div className="text-red-600 font-bold ">{row.open}</div>
-                    <div className="text-yellow-600 font-bold ">
+  return (
+    <div
+      key={row.acReg}
+      onClick={() =>
+        setFilterAcRegs((prev) =>
+          prev.includes(row.acReg)
+            ? prev.filter((ac) => ac !== row.acReg)
+            : [...prev, row.acReg]
+        )
+      }
+      className={`
+        grid ${gridCols}
+        items-stretch
+        text-xs border-t
+        cursor-pointer transition-colors
+        py-1
+
+        ${
+          filterAcRegs.includes(row.acReg)
+            ? 'bg-teal-200 dark:bg-teal-700'
+            : index % 2 === 0
+            ? 'bg-white dark:bg-slate-800'
+            : 'bg-gray-100 dark:bg-slate-700'
+        }
+
+        hover:bg-slate-300 dark:hover:bg-slate-600
+      `}
+    >
+
+                    {/* AC */}
+                    <div className="grid-cell text-gray-800 font-bold">
+                      {row.acReg}
+                    </div>
+
+                    {/* STATUS */}
+                    <div className="grid-cell text-red-600 font-bold">
+                      {row.open}
+                    </div>
+                    <div className="grid-cell text-yellow-600 font-bold">
                       {row.progress}
                     </div>
-                    <div className="text-green-600 font-bold ">
+                    <div className="grid-cell text-green-600 font-bold">
                       {row.closed}
                     </div>
-                    <div className="text-purple-600 font-bold">
+                    <div className="grid-cell text-purple-600 font-bold">
                       {row.totalOrder}
                     </div>
-                    <div className="text-gray-600 font-bold ">
-                      {row.rts && !isNaN(new Date(row.rts).getTime())
-                        ? formatDateToDDMMMYYYY(new Date(row.rts))
-                        : '-'}
+
+                    {/* LOCATION FLOW */}
+                    <div className="grid-cell text-gray-700">
+                      {row.awaiting}
+                    </div>
+                    <div className="grid-cell text-blue-600 font-bold">
+                      {row.incoming}
+                    </div>
+                    <div className="grid-cell text-orange-600 font-bold">
+                      {row.wip}
+                    </div>
+                    <div className="grid-cell text-teal-600 font-bold">
+                      {row.fsb}
+                    </div>
+                    <div className="grid-cell text-green-700 font-bold">
+                      {row.release}
                     </div>
 
-                    {/* REMAIN */}
+                    {/* PLAN RTS */}
+                    <div className="grid-cell text-gray-800 font-bold">
+                      {row.rts && !isNaN(new Date(row.rts).getTime())
+                        ? formatDateToDDMMMYYYY(new Date(row.rts))
+                        : 'N/A'}
+                    </div>
+
+                    {/* D-DAY */}
                     <div
                       className={
                         remain !== null
                           ? remain < 0
-                            ? 'text-red-600 font-bold'
+                            ? 'grid-cell text-red-600 font-bold'
                             : remain <= 3
-                            ? 'text-orange-500 font-bold'
-                            : 'text-green-600 font-bold '
-                          : 'text-gray-400'
+                            ? 'grid-cell text-orange-500 font-bold'
+                            : 'grid-cell text-green-600 font-bold'
+                          : 'grid-cell text-gray-400'
                       }
                     >
-                      {remain !== null ? remain : '-'}
+                      {remain === null ? 'N/A' : remain < 0 ? 'RTS' : remain}
+                    </div>
+
+                    {/* %  */}
+                    <div className="grid-cell w-full">
+                      <ClosedBar closed={row.closed} total={row.totalOrder} />
+                    </div>
+
+                    {/* PLAN FSB */}
+                    <div className="grid-cell text-blue-600 font-bold">
+                      {row.planFsb ? formatDateToDDMMMYYYY(row.planFsb) : 'N/A'}
+                    </div>
+
+                    <div className="grid-cell w-full text-xs font-semibold text-slate-700 break-words text-center">
+                      {row.uic}
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
+          </div>
 
           {/* 🧊 Ini pembungkus baru untuk freeze header */}
-          <div
-            className={`print-area w-full rounded-lg shadow-inner dark-scroll
-    ${
-      isScreenshot
-        ? 'overflow-visible max-h-none'
-        : 'overflow-auto max-h-[80vh]'
+          <div className="flex-1 min-w-0">
+
+
+{/* ===== TITLE (FIX, TIDAK IKUT SCROLL) ===== */}
+<div className="bg-transparent text-gray-400 text-md font-bold py-1 rounded-t-lg shadow">
+  PROJECT COMPONENT DETAIL
+</div>
+
+{/* ===== AREA TABLE ===== */}
+<div
+  className={`
+    w-full rounded-lg shadow-inner dark-scroll
+    ${isScreenshot
+      ? 'overflow-visible max-h-none'
+      : 'overflow-x-auto overflow-y-auto max-h-[80vh]'
     }
   `}
-          >
-            <div className="bg-[#00838f] sticky top-0 z-20  text-white text-sm font-bold text-center py-2">
-              PROJECT COMPONENT DETAIL
-            </div>
+>
+  <table
+    className={`
+      table-auto text-[12px] leading-tight
+      ${isScreenshot ? 'w-full' : 'min-w-max'}
+    `}
+  >
 
-            <table className="w-full table-auto text-[12px] leading-tight">
               <thead
                 className={`bg-teal-700 shadow
         ${isScreenshot ? 'static' : 'sticky top-0 z-0'}
       `}
               >
-                <tr className="sticky top-[35px] z-10 h-6 bg-[#607d8b] text-white text-xs font-semibold text-center">
+                <tr className="sticky  z-10 h-7 bg-[#00838f] text-white text-xs font-semibold text-center">
                   {/* NO */}
                   <th className=" px-2 py-1 text-center w-[40px]">No</th>
 
@@ -1702,7 +1871,7 @@ export default function BUSH4() {
                   <th className="px-1 py-1  min-w-[90px]">STATUS JOB</th>
                   <th className="px-1 py-1">PLAN FSB</th>
                   <th className="px-1 py-1   min-w-[250px]">REMARK SHOP</th>
-                  <th className="px-1 py-1  min-w-[120px]">REMARK PE/PPC</th>
+                  <th className="px-1 py-1  min-w-[250px]">REMARK PE/PPC</th>
                   <th className="px-1 py-1 min-w-[400px]">TRACKING SHIPMENT</th>
                   <th className="px-1 py-1 min-w-[90px]">LINK SCAN </th>
                   {/* lanjutkan sesuai kebutuhan */}
@@ -1912,6 +2081,8 @@ export default function BUSH4() {
               </div>
             )}
           </div>
+          
+        </div>
         </div>
 
         <div className="flex justify-start mt-2 text-white text-[11px] items-center space-x-2">
