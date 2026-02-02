@@ -236,7 +236,7 @@ type OrderFilter = {
 };
 
 const gridCols =
-  'grid-cols-[70px_28px_28px_28px_38px_28px_28px_28px_28px_28px_90px_72px_90px_90px_90px]';
+  'grid-cols-[70px_28px_28px_28px_38px_28px_28px_28px_28px_28px_130px_90px_80px_60px_90px]';
 
 ///inistate
 export default function BUSH4() {
@@ -1064,188 +1064,197 @@ export default function BUSH4() {
 
   /////ini return
   return (
-    <div className="bg-[#141414] w-full h-full">
-      <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[590vh] overflow-hidden w-full rounded-lg ">
-        {/* ================= ROTABLE COMPONENT SUMMARY ================= */}
-<div className="w-full mb-2">
-
-{/* ===== TITLE (FIX, TIDAK IKUT SCROLL) ===== */}
-<div className="bg-transparent text-md font-bold text-gray-400 text-center py-2 rounded-t-[10px] shadow">
-  ROTABLE COMPONENT SUMMARY
-</div>
-
-{/* ===== SCROLL AREA ===== */}
-<div className="rounded-lg shadow-inner overflow-x-auto">
-
-  {/* TABLE WRAPPER */}
-  <div className="min-w-[1200px] flex flex-col">
-
-            {/* HEADER TABLE */}
-            <div className=" grid grid-cols-11 min-w-[1200px]  whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#00838f]">
-              <div className="border-r border-gray-400 py-2 border-r border-gray-300">
-                TYPE A/C
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                P/N
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                CATEGORY
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                DESCRIPTION
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                SHOP
-              </div>
-
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                REMAIN STOCK
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                SAFETY STOCK
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                STATUS STOCK
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                WIP
-              </div>
-              <div className="border-r border-gray-400  py-2 border-r border-gray-300">
-                INCOMING
-              </div>
-              <div className="py-2">NEXT FSB</div>
+    <div
+      className={
+        isScreenshot ? 'screenshot-mode dashboard-root' : 'dashboard-root'
+      }
+    >
+      <div className="bg-[#141414] w-full h-full">
+        <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[590vh] overflow-hidden w-full rounded-lg ">
+          {/* ================= ROTABLE COMPONENT SUMMARY ================= */}
+          <div className="w-full mb-2">
+            {/* ===== TITLE (FIX, TIDAK IKUT SCROLL) ===== */}
+            <div className="bg-transparent text-md font-bold text-gray-400 text-center py-2 rounded-t-[10px] shadow">
+              ROTABLE COMPONENT SUMMARY
             </div>
 
-            {/* ROWS */}
-            {rotableSummary.map((row) => (
-              <div key={row.label}>
-                {/* SUMMARY ROW */}
-                <div
-                  onClick={() => togglePn(row.label)}
-                  className="grid grid-cols-11 min-w-[1200px]  text-xs border-t bg-white cursor-pointer hover:bg-slate-200"
-                >
-                  {/* TYPE A/C */}
-                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                    {row.typeAc}
+            {/* ===== SCROLL AREA ===== */}
+            <div className="rounded-lg shadow-inner overflow-x-auto">
+              {/* TABLE WRAPPER */}
+              <div className="min-w-[1200px] flex flex-col">
+                {/* HEADER TABLE */}
+                <div className=" grid grid-cols-11 min-w-[1200px]  whitespace-normal break-words text-center text-xs font-bold text-white border-t border-gray-400 bg-[#00838f]">
+                  <div className="border-r border-gray-400 py-2 border-r border-gray-300">
+                    TYPE A/C
+                  </div>
+                  <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                    P/N
+                  </div>
+                  <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                    CATEGORY
+                  </div>
+                  <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                    DESCRIPTION
+                  </div>
+                  <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                    SHOP
                   </div>
 
-                  {/* PN */}
-                  <div className="border-r px-2 py-2 font-bold text-blue-600 text-center whitespace-normal break-words">
-                    {row.label}
+                  <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                    REMAIN STOCK
                   </div>
-
-                  {/* CATEGORY */}
-                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                    {row.category}
+                  <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                    SAFETY STOCK
                   </div>
-
-                  {/* DESCRIPTION */}
-                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                    {row.description}
+                  <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                    STATUS STOCK
                   </div>
-
-                  {/* SHOP */}
-                  <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
-                    {row.shop}
+                  <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                    WIP
                   </div>
-
-                  {/* REMAIN */}
-                  <div
-                    className={`border-r px-2 py-2 font-bold text-center ${
-                      row.remain < row.safetyStock
-                        ? 'text-red-600'
-                        : 'text-blue-600'
-                    }`}
-                  >
-                    {row.remain} EA
+                  <div className="border-r border-gray-400  py-2 border-r border-gray-300">
+                    INCOMING
                   </div>
-
-                  {/* SAFETY */}
-                  <div className="border-r px-2 py-2 font-bold text-center">
-                    {row.safetyStock} EA
-                  </div>
-
-                  {/* STATUS */}
-                  {(() => {
-                    const status = getStockStatus(row.remain, row.safetyStock);
-                    return (
-                      <div
-                        className={`"border-r px-2 py-2 text-center font-bold whitespace-normal break-words ${status.color}`}
-                      >
-                        {status.label}
-                      </div>
-                    );
-                  })()}
-
-                  {/* WIP */}
-                  <div className="border-r px-2 py-2 font-bold text-center">
-                    {row.wip} EA
-                  </div>
-
-                  {/* INCOMING */}
-                  <div className="border-r px-2 py-2 font-bold text-center">
-                    {row.incoming} EA
-                  </div>
-
-                  {/* NEXT FSB */}
-                  <div className="flex flex-col items-center justify-center font-bold ">
-                    {row.nextFsbQty > 0 ? (
-                      <>
-                        <span>{row.nextFsbQty} EA</span>
-                        <span className="text-xs text-gray-700 ">
-                          {row.nextFsbDate}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-gray-400 text-center">-</span>
-                    )}
-                  </div>
+                  <div className="py-2">NEXT FSB</div>
                 </div>
-                {/* COLLAPSE DETAIL */}
-                {expandedPn.includes(row.label) && (
-                  <div className="bg-gray-50 border-b px-2 py-2">
-                    <div className="bg-white border border-gray-500 rounded-md text-xs overflow-hidden">
-                      {/* HEADER */}
-                      <div className="grid grid-cols-12 bg-[#607d8b] font-bold text-white text-center px-2 whitespace-normal break-words">
-                        <div className="col-span-3 py-2">DETAIL ALL ITEM</div>
-                        <div className="col-span-1  py-2">STATUS ITEM</div>
-                        <div className="col-span-1 py-2">STATUS DOC</div>
-                        <div className="col-span-1  py-2">STATUS BDP</div>
-                        <div className="col-span-1  py-2">STATUS JOB</div>
-                        <div className="col-span-1  py-2">PLAN FSB</div>
-                        <div className="col-span-3 py-2">REMARK</div>
+
+                {/* ROWS */}
+                {rotableSummary.map((row) => (
+                  <div key={row.label}>
+                    {/* SUMMARY ROW */}
+                    <div
+                      onClick={() => togglePn(row.label)}
+                      className="grid grid-cols-11 min-w-[1200px]  text-xs border-t bg-white cursor-pointer hover:bg-slate-200"
+                    >
+                      {/* TYPE A/C */}
+                      <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                        {row.typeAc}
                       </div>
 
-                      {/* ROWS */}
+                      {/* PN */}
+                      <div className="border-r px-2 py-2 font-bold text-blue-600 text-center whitespace-normal break-words">
+                        {row.label}
+                      </div>
+
+                      {/* CATEGORY */}
+                      <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                        {row.category}
+                      </div>
+
+                      {/* DESCRIPTION */}
+                      <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                        {row.description}
+                      </div>
+
+                      {/* SHOP */}
+                      <div className="border-r px-2 py-2 text-center whitespace-normal break-words">
+                        {row.shop}
+                      </div>
+
+                      {/* REMAIN */}
+                      <div
+                        className={`border-r px-2 py-2 font-bold text-center ${
+                          row.remain < row.safetyStock
+                            ? 'text-red-600'
+                            : 'text-blue-600'
+                        }`}
+                      >
+                        {row.remain} EA
+                      </div>
+
+                      {/* SAFETY */}
+                      <div className="border-r px-2 py-2 font-bold text-center">
+                        {row.safetyStock} EA
+                      </div>
+
+                      {/* STATUS */}
                       {(() => {
-                        // 1️⃣ SORT: FSB (OUTGOING) dulu, lalu WIP
-                        const sortedRows = [...row.rows].sort((a, b) => {
-                          const getPriority = (loc) => {
-                            if (loc === 'FSB') return 0; // FSB
-                            if (loc === 'WIP' || loc === 'INCOMING') return 1; // WIP
-                            return 2;
-                          };
-                          return (
-                            getPriority(a.location) - getPriority(b.location)
-                          );
-                        });
-
+                        const status = getStockStatus(
+                          row.remain,
+                          row.safetyStock
+                        );
                         return (
-                          <ul className="divide-y divide-gray-300 bg-slate-50">
-                            {sortedRows.map((r) => {
-                              // 2️⃣ STATUS COMP
-                              const statusComp =
-                                r.location === 'FSB'
-                                  ? 'FSB'
-                                  : r.location === 'INCOMING' ||
-                                    r.location === 'WIP'
-                                  ? 'WIP'
-                                  : '-';
+                          <div
+                            className={`"border-r px-2 py-2 text-center font-bold whitespace-normal break-words ${status.color}`}
+                          >
+                            {status.label}
+                          </div>
+                        );
+                      })()}
 
+                      {/* WIP */}
+                      <div className="border-r px-2 py-2 font-bold text-center">
+                        {row.wip} EA
+                      </div>
+
+                      {/* INCOMING */}
+                      <div className="border-r px-2 py-2 font-bold text-center">
+                        {row.incoming} EA
+                      </div>
+
+                      {/* NEXT FSB */}
+                      <div className="flex flex-col items-center justify-center font-bold ">
+                        {row.nextFsbQty > 0 ? (
+                          <>
+                            <span>{row.nextFsbQty} EA</span>
+                            <span className="text-xs text-gray-700 ">
+                              {row.nextFsbDate}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-gray-400 text-center">-</span>
+                        )}
+                      </div>
+                    </div>
+                    {/* COLLAPSE DETAIL */}
+                    {expandedPn.includes(row.label) && (
+                      <div className="bg-gray-50 border-b px-2 py-2">
+                        <div className="bg-white border border-gray-500 rounded-md text-xs overflow-hidden">
+                          {/* HEADER */}
+                          <div className="grid grid-cols-12 bg-[#607d8b] font-bold text-white text-center px-2 whitespace-normal break-words">
+                            <div className="col-span-3 py-2">
+                              DETAIL ALL ITEM
+                            </div>
+                            <div className="col-span-1  py-2">STATUS ITEM</div>
+                            <div className="col-span-1 py-2">STATUS DOC</div>
+                            <div className="col-span-1  py-2">STATUS BDP</div>
+                            <div className="col-span-1  py-2">STATUS JOB</div>
+                            <div className="col-span-1  py-2">PLAN FSB</div>
+                            <div className="col-span-3 py-2">REMARK</div>
+                          </div>
+
+                          {/* ROWS */}
+                          {(() => {
+                            // 1️⃣ SORT: FSB (OUTGOING) dulu, lalu WIP
+                            const sortedRows = [...row.rows].sort((a, b) => {
+                              const getPriority = (loc) => {
+                                if (loc === 'FSB') return 0; // FSB
+                                if (loc === 'WIP' || loc === 'INCOMING')
+                                  return 1; // WIP
+                                return 2;
+                              };
                               return (
-                                <li
-                                  key={r.id}
-                                  className="
+                                getPriority(a.location) -
+                                getPriority(b.location)
+                              );
+                            });
+
+                            return (
+                              <ul className="divide-y divide-gray-300 bg-slate-50">
+                                {sortedRows.map((r) => {
+                                  // 2️⃣ STATUS COMP
+                                  const statusComp =
+                                    r.location === 'FSB'
+                                      ? 'FSB'
+                                      : r.location === 'INCOMING' ||
+                                        r.location === 'WIP'
+                                      ? 'WIP'
+                                      : '-';
+
+                                  return (
+                                    <li
+                                      key={r.id}
+                                      className="
               grid grid-cols-12
               px-2 py-2
               text-[11px]
@@ -1254,22 +1263,22 @@ export default function BUSH4() {
               hover:bg-slate-200
               transition-colors
             "
-                                >
-                                  {/* IDENTIFICATION */}
-                                  <div className="col-span-3 flex flex-col gap-0.5">
-                                    <span className="font-bold text-blue-600 flex flex-wrap gap-1">
-                                      {r.ac_reg || '-'} • {r.order || '-'} •{' '}
-                                      {r.pn || '-'} • {r.sn || '-'}
-                                    </span>
-                                    <span className="text-gray-700 whitespace-normal break-words">
-                                      {r.description || '-'}
-                                    </span>
-                                  </div>
+                                    >
+                                      {/* IDENTIFICATION */}
+                                      <div className="col-span-3 flex flex-col gap-0.5">
+                                        <span className="font-bold text-blue-600 flex flex-wrap gap-1">
+                                          {r.ac_reg || '-'} • {r.order || '-'} •{' '}
+                                          {r.pn || '-'} • {r.sn || '-'}
+                                        </span>
+                                        <span className="text-gray-700 whitespace-normal break-words">
+                                          {r.description || '-'}
+                                        </span>
+                                      </div>
 
-                                  {/* LOCATION */}
-                                  <div className="col-span-1 flex items-center justify-center font-bold">
-                                    <span
-                                      className={`px-2 py-0.5 rounded-full text-white
+                                      {/* LOCATION */}
+                                      <div className="col-span-1 flex items-center justify-center font-bold">
+                                        <span
+                                          className={`px-2 py-0.5 rounded-full text-white
                   ${
                     r.location === 'FSB'
                       ? 'bg-green-600'
@@ -1277,37 +1286,37 @@ export default function BUSH4() {
                       ? 'bg-yellow-500'
                       : 'bg-gray-400'
                   }`}
-                                    >
-                                      {r.location || '-'}
-                                    </span>
-                                  </div>
+                                        >
+                                          {r.location || '-'}
+                                        </span>
+                                      </div>
 
-                                  {/* DOC STATUS */}
-                                  <div className="col-span-1 flex items-center justify-center font-bold">
-                                    <span
-                                      className={`${
-                                        r.doc_status === 'OPEN'
-                                          ? 'text-red-600'
-                                          : r.doc_status === 'PROGRESS'
-                                          ? 'text-yellow-600'
-                                          : r.doc_status === 'CLOSED'
-                                          ? 'text-green-600'
-                                          : 'text-gray-600'
-                                      }`}
-                                    >
-                                      {r.doc_status || '-'}
-                                    </span>
-                                  </div>
+                                      {/* DOC STATUS */}
+                                      <div className="col-span-1 flex items-center justify-center font-bold">
+                                        <span
+                                          className={`${
+                                            r.doc_status === 'OPEN'
+                                              ? 'text-red-600'
+                                              : r.doc_status === 'PROGRESS'
+                                              ? 'text-yellow-600'
+                                              : r.doc_status === 'CLOSED'
+                                              ? 'text-green-600'
+                                              : 'text-gray-600'
+                                          }`}
+                                        >
+                                          {r.doc_status || '-'}
+                                        </span>
+                                      </div>
 
-                                  {/* STATUS MAT */}
-                                  <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
-                                    {r.remark_mat || '-'}
-                                  </div>
+                                      {/* STATUS MAT */}
+                                      <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
+                                        {r.remark_mat || '-'}
+                                      </div>
 
-                                  {/* STATUS JOB */}
-                                  <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
-                                    <span
-                                      className={`px-2 py-0.5 rounded-full text-white
+                                      {/* STATUS JOB */}
+                                      <div className="col-span-1 flex items-center justify-center whitespace-normal break-words text-center">
+                                        <span
+                                          className={`px-2 py-0.5 rounded-full text-white
                   ${
                     r.status_job === 'CLOSED'
                       ? 'bg-green-600'
@@ -1315,396 +1324,388 @@ export default function BUSH4() {
                       ? 'bg-yellow-500'
                       : 'bg-red-500'
                   }`}
-                                    >
-                                      {r.status_job || '-'}
-                                    </span>
-                                  </div>
+                                        >
+                                          {r.status_job || '-'}
+                                        </span>
+                                      </div>
 
-                                  {/* EST FINISH */}
-                                  <div className="col-span-1 flex items-center justify-center whitespace-normal break-words">
-                                    {r.est_date
-                                      ? formatDateToDDMMMYYYY(
-                                          new Date(r.est_date)
-                                        )
-                                      : '-'}
-                                  </div>
+                                      {/* EST FINISH */}
+                                      <div className="col-span-1 flex items-center justify-center whitespace-normal break-words">
+                                        {r.est_date
+                                          ? formatDateToDDMMMYYYY(
+                                              new Date(r.est_date)
+                                            )
+                                          : '-'}
+                                      </div>
 
-                                  {/* REMARK */}
-                                  <div className="col-span-3 whitespace-normal break-words text-center">
-                                    {r.remark || '-'}
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        );
-                      })()}
-                    </div>
+                                      {/* REMARK */}
+                                      <div className="col-span-3 whitespace-normal break-words text-center">
+                                        {r.remark || '-'}
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        </div>
-
-        <div className="mb-2 flex items-start gap-2 overflow-hidden">
-          {/* Kotak input + chips */}
-          <div className="flex flex-wrap gap-1 border border-gray-500 rounded-md px-1 py-1 relative flex-1">
-            {filterOrders.map((order) => (
-              <span
-                key={order.value}
-                className={`flex items-center px-2 py-1 rounded-full text-xs ${
-                  order.valid
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-red-100 text-red-700'
-                }`}
-              >
-                {order.value}
-                <button
-                  onClick={() => handleRemoveOrder(order.value)}
-                  className="ml-1 text-red-500 hover:text-red-700"
-                >
-                  ✕
-                </button>
-              </span>
-            ))}
-
-            <input
-              type="text"
-              value={orderInput}
-              onChange={(e) => {
-                setOrderInput(e.target.value);
-                setShowOrderSuggestions(true);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && orderInput.trim() !== '') {
-                  handleAddOrder(orderInput.trim());
-                  e.preventDefault();
-                }
-              }}
-              onPaste={(e) => {
-                e.preventDefault();
-                const pasted = e.clipboardData.getData('text');
-                const items = pasted
-                  .split(/\s|,|\n/)
-                  .map((s) => s.trim())
-                  .filter((s) => s !== '');
-                items.forEach((item) => handleAddOrder(item));
-              }}
-              placeholder="Type or paste order no..."
-              className="bg-[#292929] text-white text-[11px] rounded-md outline-none px-1 w-full"
-            />
-
-            {showOrderSuggestions && orderSuggestions.length > 0 && (
-              <ul className="absolute left-0 top-full mt-1 w-full border rounded bg-white shadow max-h-40 overflow-y-auto text-xs z-20">
-                {orderSuggestions.map((sug) => (
-                  <li
-                    key={sug}
-                    onClick={() => handleAddOrder(sug)}
-                    className="px-2 py-1 hover:bg-blue-100 cursor-pointer"
-                  >
-                    {sug}
-                  </li>
                 ))}
-              </ul>
-            )}
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div className="mb-2 flex flex-wrap gap-1 items-center ">
-          <div className="flex items-center ml-0">
-            <span className="text-xs font-medium"></span>
-            <label className="relative inline-flex items-center cursor-pointer select-none w-11 h-5">
+          <div className="mb-2 flex items-start gap-2 overflow-hidden">
+            {/* Kotak input + chips */}
+            <div className="flex flex-wrap gap-1 border border-gray-500 rounded-md px-1 py-1 relative flex-1">
+              {filterOrders.map((order) => (
+                <span
+                  key={order.value}
+                  className={`flex items-center px-2 py-1 rounded-full text-xs ${
+                    order.valid
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-red-100 text-red-700'
+                  }`}
+                >
+                  {order.value}
+                  <button
+                    onClick={() => handleRemoveOrder(order.value)}
+                    className="ml-1 text-red-500 hover:text-red-700"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+
               <input
-                type="checkbox"
-                checked={showCheckboxColumn}
-                onChange={() => setShowCheckboxColumn(!showCheckboxColumn)}
-                className="sr-only peer"
+                type="text"
+                value={orderInput}
+                onChange={(e) => {
+                  setOrderInput(e.target.value);
+                  setShowOrderSuggestions(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && orderInput.trim() !== '') {
+                    handleAddOrder(orderInput.trim());
+                    e.preventDefault();
+                  }
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pasted = e.clipboardData.getData('text');
+                  const items = pasted
+                    .split(/\s|,|\n/)
+                    .map((s) => s.trim())
+                    .filter((s) => s !== '');
+                  items.forEach((item) => handleAddOrder(item));
+                }}
+                placeholder="Type or paste order no..."
+                className="bg-[#292929] text-white text-[11px] rounded-md outline-none px-1 w-full"
               />
-              <div className="w-full h-full bg-gray-600 rounded-full peer-checked:bg-blue-600 transition-colors duration-200" />
-              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white border border-gray-300 rounded-full transition-transform duration-200 peer-checked:translate-x-[24px]" />
-              <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] text-white font-semibold opacity-0 peer-checked:opacity-100 transition-opacity duration-200">
-                ON
-              </span>
-              <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-white font-semibold opacity-100 peer-checked:opacity-0 transition-opacity duration-200">
-                OFF
-              </span>
-            </label>
+
+              {showOrderSuggestions && orderSuggestions.length > 0 && (
+                <ul className="absolute left-0 top-full mt-1 w-full border rounded bg-white shadow max-h-40 overflow-y-auto text-xs z-20">
+                  {orderSuggestions.map((sug) => (
+                    <li
+                      key={sug}
+                      onClick={() => handleAddOrder(sug)}
+                      className="px-2 py-1 hover:bg-blue-100 cursor-pointer"
+                    >
+                      {sug}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="border border-gray-500 bg-[#292929] text-white rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow flex-1"
-          />
+          <div className="mb-2 flex flex-wrap gap-1 items-center ">
+            <div className="flex items-center ml-0">
+              <span className="text-xs font-medium"></span>
+              <label className="relative inline-flex items-center cursor-pointer select-none w-11 h-5">
+                <input
+                  type="checkbox"
+                  checked={showCheckboxColumn}
+                  onChange={() => setShowCheckboxColumn(!showCheckboxColumn)}
+                  className="sr-only peer"
+                />
+                <div className="w-full h-full bg-gray-600 rounded-full peer-checked:bg-blue-600 transition-colors duration-200" />
+                <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white border border-gray-300 rounded-full transition-transform duration-200 peer-checked:translate-x-[24px]" />
+                <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[10px] text-white font-semibold opacity-0 peer-checked:opacity-100 transition-opacity duration-200">
+                  ON
+                </span>
+                <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[10px] text-white font-semibold opacity-100 peer-checked:opacity-0 transition-opacity duration-200">
+                  OFF
+                </span>
+              </label>
+            </div>
 
-          <div className="relative w-[120px] ">
             <input
               type="text"
-              value={filterAcInput}
-              onChange={(e) => {
-                setFilterAcInput(e.target.value);
-                setShowSuggestions(true);
-              }}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              placeholder="Filter A/C Reg"
-              className="border border-gray-500 bg-[#292929] text-white rounded-md px-1 py-1 text-[11px] w-full shadow hover:bg-gray-500"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="border border-gray-500 bg-[#292929] text-white rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow flex-1"
             />
 
-            {showSuggestions && (
-              <ul className="absolute z-50 bg-white border w-full max-h-40 overflow-y-auto text-[11px] shadow-md rounded">
-                <li
-                  className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
-                  onMouseDown={() => {
-                    setFilterAcRegs([]);
-                    setFilterAcInput('');
-                    setSearchTerm(''); // 🔥 WAJIB
-                    setShowSuggestions(false);
-                  }}
-                >
-                  All A/C Reg
-                </li>
+            <div className="relative w-[120px] ">
+              <input
+                type="text"
+                value={filterAcInput}
+                onChange={(e) => {
+                  setFilterAcInput(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                placeholder="Filter A/C Reg"
+                className="border border-gray-500 bg-[#292929] text-white rounded-md px-1 py-1 text-[11px] w-full shadow hover:bg-gray-500"
+              />
 
-                {filteredOptions.length === 0 && (
-                  <li className="px-2 py-1 text-gray-400">No match</li>
-                )}
-
-                {filteredOptions.map((reg) => (
+              {showSuggestions && (
+                <ul className="absolute z-50 bg-white border w-full max-h-40 overflow-y-auto text-[11px] shadow-md rounded">
                   <li
-                    key={reg}
-                    className={`
-          px-2 py-1 cursor-pointer hover:bg-blue-100
-          ${filterAcRegs.includes(reg) ? 'bg-blue-200 font-bold' : ''}
-        `}
+                    className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
                     onMouseDown={() => {
-                      setFilterAcRegs((prev) =>
-                        prev.includes(reg) ? prev : [...prev, reg]
-                      );
+                      setFilterAcRegs([]);
                       setFilterAcInput('');
                       setSearchTerm(''); // 🔥 WAJIB
                       setShowSuggestions(false);
                     }}
                   >
-                    {reg}
+                    All A/C Reg
                   </li>
-                ))}
-              </ul>
-            )}
-          </div>
 
-          <button
-            onClick={() => setShowOnlyChecked((prev) => !prev)}
-            className="inline-flex justify-center rounded-md border border-gray-500 shadow-sm px-1.5 py-1 bg-[#292929] text-white text-[11px] font-normal  hover:bg-gray-500 "
-          >
-            {showOnlyChecked ? 'Checked Row' : 'All Row'}
-          </button>
+                  {filteredOptions.length === 0 && (
+                    <li className="px-2 py-1 text-gray-400">No match</li>
+                  )}
 
-          <div className="flex items-center gap-1 ">
-            {/* Dropdown Menu */}
-            <div className="relative inline-block text-left ml-0 w-[65px]">
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className="inline-flex justify-center w-full rounded-md border border-gray-500 shadow-sm px-1.5 py-1 bg-[#292929] text-white text-[11px] font-normal hover:bg-gray-500"
-              >
-                Actions
-              </button>
-
-              {showMenu && (
-                <div className="absolute z-50 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
-                  <div className="py-0 text-[11px]">
-                    <button
-                      onClick={() => handleAction('copy')}
-                      className="block w-full text-left px-2 py-1 hover:bg-gray-100"
+                  {filteredOptions.map((reg) => (
+                    <li
+                      key={reg}
+                      className={`
+          px-2 py-1 cursor-pointer hover:bg-blue-100
+          ${filterAcRegs.includes(reg) ? 'bg-blue-200 font-bold' : ''}
+        `}
+                      onMouseDown={() => {
+                        setFilterAcRegs((prev) =>
+                          prev.includes(reg) ? prev : [...prev, reg]
+                        );
+                        setFilterAcInput('');
+                        setSearchTerm(''); // 🔥 WAJIB
+                        setShowSuggestions(false);
+                      }}
                     >
-                      📋 Copy
-                    </button>
-                    <button
-                      onClick={() => handleActionWithConfirmation('save')}
-                      className="block w-full text-left px-2 py-1 hover:bg-gray-100"
-                    >
-                      💾 Export
-                    </button>
-                  </div>
-                </div>
+                      {reg}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
+
+            <button
+              onClick={() => setShowOnlyChecked((prev) => !prev)}
+              className="inline-flex justify-center rounded-md border border-gray-500 shadow-sm px-1.5 py-1 bg-[#292929] text-white text-[11px] font-normal  hover:bg-gray-500 "
+            >
+              {showOnlyChecked ? 'Checked Row' : 'All Row'}
+            </button>
+
+            <div className="flex items-center gap-1 ">
+              {/* Dropdown Menu */}
+              <div className="relative inline-block text-left ml-0 w-[65px]">
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="inline-flex justify-center w-full rounded-md border border-gray-500 shadow-sm px-1.5 py-1 bg-[#292929] text-white text-[11px] font-normal hover:bg-gray-500"
+                >
+                  Actions
+                </button>
+
+                {showMenu && (
+                  <div className="absolute z-50 mt-2 w-28 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                    <div className="py-0 text-[11px]">
+                      <button
+                        onClick={() => handleAction('copy')}
+                        className="block w-full text-left px-2 py-1 hover:bg-gray-100"
+                      >
+                        📋 Copy
+                      </button>
+                      <button
+                        onClick={() => handleActionWithConfirmation('save')}
+                        className="block w-full text-left px-2 py-1 hover:bg-gray-100"
+                      >
+                        💾 Export
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <CustomSelect
+              value={filterDocType}
+              onChange={(e) => setFilterDocType(e.target.value)}
+              options={[
+                { label: 'All Doc Type', value: '' },
+                ...DOC_TYPES.map((type) => ({
+                  label: type,
+                  value: type,
+                })),
+              ]}
+              className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
+            />
+
+            <CustomSelect
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value)}
+              options={[
+                { label: 'All Priority', value: 'All' },
+                { label: 'Med', value: 'Med' },
+                { label: 'High', value: 'High' },
+              ]}
+              className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
+            />
+
+            <CustomSelect
+              value={filterDocStatus}
+              onChange={(e) => setFilterDocStatus(e.target.value)}
+              options={[
+                { label: 'All Doc Status', value: '' },
+                ...DOC_STATUS_OPTIONS.map((status) => ({
+                  label: status,
+                  value: status,
+                })),
+              ]}
+              className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
+            />
+
+            <CustomSelect
+              value={filterW}
+              onChange={(e) => setFilterW(e.target.value)}
+              options={[
+                { label: 'All Shop', value: '' },
+                { label: 'Sheetmetal', value: 'W301' },
+                { label: 'Composite', value: 'W302' },
+                { label: 'Seat', value: 'W304' },
+                { label: 'Cabin', value: 'W305' },
+                { label: 'Machining', value: 'W303' },
+              ]}
+              className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
+            />
+
+            <CustomSelect
+              value={filterLocation}
+              onChange={(e) => setFilterLocation(e.target.value)}
+              options={[
+                { label: 'All Item', value: '' },
+                { label: 'Awaiting', value: 'awaiting' },
+                { label: 'Incoming', value: 'incoming' },
+                { label: 'WIP', value: 'wip' },
+                { label: 'FSB', value: 'fsb' },
+                { label: 'WIP + FSB', value: 'wip_fsb' }, // 👈 tambahan
+                { label: 'Release', value: 'release' },
+              ]}
+              className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
+            />
+
+            <CustomSelect
+              value={filterStatusJob}
+              onChange={(e) => setFilterStatusJob(e.target.value)}
+              options={[
+                { label: 'All Status Job', value: '' },
+                { label: 'OPEN', value: 'OPEN' },
+                { label: 'PROGRESS', value: 'PROGRESS' },
+                { label: 'OPEN + PROGRESS', value: 'OPEN_PROGRESS' }, // ✅ tambahan
+                { label: 'CLOSED', value: 'CLOSED' },
+              ]}
+              className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
+            />
+
+            <button
+              onClick={() => setIsScreenshot((v) => !v)}
+              className="px-3 py-1 text-xs bg-slate-700 text-white rounded hover:bg-slate-600"
+            >
+              {isScreenshot ? 'Expand' : 'Collapse'}
+            </button>
           </div>
 
-          <CustomSelect
-            value={filterDocType}
-            onChange={(e) => setFilterDocType(e.target.value)}
-            options={[
-              { label: 'All Doc Type', value: '' },
-              ...DOC_TYPES.map((type) => ({
-                label: type,
-                value: type,
-              })),
-            ]}
-            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
-          />
+          {/* 📊 Status Summary dan Donut Chart */}
+          {/* 👇 PEMBUNGKUS 2 TABEL */}
+          <div className="flex gap-2 w-full items-start mb-3 overflow-hidden">
+            {/* ===== WRAPPER UTAMA ===== */}
+            <div className="w-[800px]  flex-none">
+              {/* ===== TITLE (DI ATAS, TIDAK IKUT SCROLL) ===== */}
+              <div className="bg-transparent text-gray-400 text-md font-bold text-center py-1 rounded-t-lg shadow">
+                PROJECT COMPONENT SUMMARY
+              </div>
 
-          <CustomSelect
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            options={[
-              { label: 'All Priority', value: 'All' },
-              { label: 'Med', value: 'Med' },
-              { label: 'High', value: 'High' },
-            ]}
-            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
-          />
-
-          <CustomSelect
-            value={filterDocStatus}
-            onChange={(e) => setFilterDocStatus(e.target.value)}
-            options={[
-              { label: 'All Doc Status', value: '' },
-              ...DOC_STATUS_OPTIONS.map((status) => ({
-                label: status,
-                value: status,
-              })),
-            ]}
-            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
-          />
-
-          <CustomSelect
-            value={filterW}
-            onChange={(e) => setFilterW(e.target.value)}
-            options={[
-              { label: 'All Shop', value: '' },
-              { label: 'Sheetmetal', value: 'W301' },
-              { label: 'Composite', value: 'W302' },
-              { label: 'Seat', value: 'W304' },
-              { label: 'Cabin', value: 'W305' },
-              { label: 'Machining', value: 'W303' },
-            ]}
-            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[100px]"
-          />
-
-          <CustomSelect
-            value={filterLocation}
-            onChange={(e) => setFilterLocation(e.target.value)}
-            options={[
-              { label: 'All Item', value: '' },
-              { label: 'Awaiting', value: 'awaiting' },
-              { label: 'Incoming', value: 'incoming' },
-              { label: 'WIP', value: 'wip' },
-              { label: 'FSB', value: 'fsb' },
-              { label: 'WIP + FSB', value: 'wip_fsb' }, // 👈 tambahan
-              { label: 'Release', value: 'release' },
-            ]}
-            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
-          />
-
-          <CustomSelect
-            value={filterStatusJob}
-            onChange={(e) => setFilterStatusJob(e.target.value)}
-            options={[
-              { label: 'All Status Job', value: '' },
-              { label: 'OPEN', value: 'OPEN' },
-              { label: 'PROGRESS', value: 'PROGRESS' },
-              { label: 'OPEN + PROGRESS', value: 'OPEN_PROGRESS' }, // ✅ tambahan
-              { label: 'CLOSED', value: 'CLOSED' },
-            ]}
-            className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
-          />
-
-          <button
-            onClick={() => setIsScreenshot((v) => !v)}
-            className="px-3 py-1 text-xs bg-slate-700 text-white rounded hover:bg-slate-600"
-          >
-            {isScreenshot ? 'Expand' : 'Collapse'}
-          </button>
-        </div>
-
-
-        {/* 📊 Status Summary dan Donut Chart */}
-        <div
-  className={`flex gap-2 w-full items-start mb-3
-    ${isScreenshot ? 'overflow-visible' : 'overflow-hidden'}
-  `}
->
-
-
-          
-        {/* ===== WRAPPER UTAMA ===== */}
-<div className="w-[600px]  flex-none">
-
-{/* ===== TITLE (DI ATAS, TIDAK IKUT SCROLL) ===== */}
-<div className="bg-transparent text-gray-400 text-md font-bold text-center py-1 rounded-t-lg shadow">
-  PROJECT COMPONENT SUMMARY
-</div>
-
-  {/* ===== AREA TABLE (SCROLL / SCREENSHOT) ===== */}
-  <div
-    className={`rounded-lg shadow-inner dark-scroll
+              {/* ===== AREA TABLE (SCROLL / SCREENSHOT) ===== */}
+              <div
+                className={`rounded-lg shadow-inner dark-scroll
       ${
         isScreenshot
           ? 'overflow-visible max-h-none'
-          : 'overflow-x-auto overflow-y-auto max-h-[76vh]'
+          : 'overflow-x-auto overflow-y-auto max-h-[50vh]'
       }
     `}
-  >
-    <div
-  className={`
+              >
+                <div
+                  className={`
     rounded-lg shadow
     ${isScreenshot ? 'w-full' : 'min-w-max'}
   `}
->
-
-              {/* HEADER */}
-              <div
-  className={`
+                >
+                  {/* HEADER */}
+                  <div
+                    className={`
     sticky top-[0px] z-20
     grid ${gridCols}
     h-7 text-xs font-bold text-white text-center
     bg-[#00838f]
   `}
->
-  {/* BASIC */}
-  <div className="grid-cell">A/C</div>
+                  >
+                    {/* BASIC */}
+                    <div className="grid-cell">A/C</div>
 
-  {/* STATUS */}
-  <div className="grid-cell bg-red-600">O</div>
-  <div className="grid-cell bg-yellow-600">P</div>
-  <div className="grid-cell bg-green-600">C</div>
-  <div className="grid-cell bg-[#0277bd]">Total</div>
+                    {/* STATUS */}
+                    <div className="grid-cell bg-red-600">O</div>
+                    <div className="grid-cell bg-yellow-600">P</div>
+                    <div className="grid-cell bg-green-600">C</div>
+                    <div className="grid-cell bg-[#0277bd]">Total</div>
 
-  {/* LOCATION */}
-  <div className="rotate-header bg-teal-600">AWT</div>
-  <div className="rotate-header bg-teal-600">INC</div>
-  <div className="rotate-header bg-teal-600">WIP</div>
-  <div className="rotate-header bg-teal-600">FSB</div>
-  <div className="rotate-header bg-teal-600">REL</div>
+                    {/* LOCATION */}
+                    <div className="rotate-header bg-teal-600">AWT</div>
+                    <div className="rotate-header bg-teal-600">INC</div>
+                    <div className="rotate-header bg-teal-600">WIP</div>
+                    <div className="rotate-header bg-teal-600">FSB</div>
+                    <div className="rotate-header bg-teal-600">REL</div>
 
-  {/* DATE / KPI */}
-  <div className="grid-cell">PLAN RTS</div>
-  <div className="grid-cell">D-DAY</div>
-  <div className="grid-cell">%</div>
-  <div className="grid-cell">PLAN FSB</div>
-  <div className="grid-cell bg-[#0277bd]">UIC</div>
-</div>
+                    <div className="grid-cell bg-[#0277bd]">UIC</div>
 
-              {/* ROWS */}
-              {sortedProjectSummary.map((row, index) => {
-  const remain = getRemainDays(row.rts);
+                    {/* DATE / KPI */}
 
-  return (
-    <div
-      key={row.acReg}
-      onClick={() =>
-        setFilterAcRegs((prev) =>
-          prev.includes(row.acReg)
-            ? prev.filter((ac) => ac !== row.acReg)
-            : [...prev, row.acReg]
-        )
-      }
-      className={`
+                    <div className="grid-cell">PLAN FSB</div>
+                    <div className="grid-cell">PLAN RTS</div>
+                    <div className="grid-cell">D-DAY</div>
+                    <div className="grid-cell">%</div>
+                  </div>
+
+                  {/* ROWS */}
+                  {sortedProjectSummary.map((row, index) => {
+                    const remain = getRemainDays(row.rts);
+
+                    return (
+                      <div
+                        key={row.acReg}
+                        onClick={() =>
+                          setFilterAcRegs((prev) =>
+                            prev.includes(row.acReg)
+                              ? prev.filter((ac) => ac !== row.acReg)
+                              : [...prev, row.acReg]
+                          )
+                        }
+                        className={`
         grid ${gridCols}
         items-stretch
         text-xs border-t
@@ -1721,257 +1722,279 @@ export default function BUSH4() {
 
         hover:bg-slate-300 dark:hover:bg-slate-600
       `}
-    >
+                      >
+                        {/* AC */}
+                        <div className="grid-cell text-gray-800 font-bold">
+                          {row.acReg}
+                        </div>
 
-                    {/* AC */}
-                    <div className="grid-cell text-gray-800 font-bold">
-                      {row.acReg}
-                    </div>
+                        {/* STATUS */}
+                        <div className="grid-cell text-red-600 font-bold">
+                          {row.open}
+                        </div>
+                        <div className="grid-cell text-yellow-600 font-bold">
+                          {row.progress}
+                        </div>
+                        <div className="grid-cell text-green-600 font-bold">
+                          {row.closed}
+                        </div>
+                        <div className="grid-cell text-purple-600 font-bold">
+                          {row.totalOrder}
+                        </div>
 
-                    {/* STATUS */}
-                    <div className="grid-cell text-red-600 font-bold">
-                      {row.open}
-                    </div>
-                    <div className="grid-cell text-yellow-600 font-bold">
-                      {row.progress}
-                    </div>
-                    <div className="grid-cell text-green-600 font-bold">
-                      {row.closed}
-                    </div>
-                    <div className="grid-cell text-purple-600 font-bold">
-                      {row.totalOrder}
-                    </div>
+                        {/* LOCATION FLOW */}
+                        <div className="grid-cell text-gray-700">
+                          {row.awaiting}
+                        </div>
+                        <div className="grid-cell text-blue-600 font-bold">
+                          {row.incoming}
+                        </div>
+                        <div className="grid-cell text-orange-600 font-bold">
+                          {row.wip}
+                        </div>
+                        <div className="grid-cell text-teal-600 font-bold">
+                          {row.fsb}
+                        </div>
+                        <div className="grid-cell text-green-700 font-bold">
+                          {row.release}
+                        </div>
 
-                    {/* LOCATION FLOW */}
-                    <div className="grid-cell text-gray-700">
-                      {row.awaiting}
-                    </div>
-                    <div className="grid-cell text-blue-600 font-bold">
-                      {row.incoming}
-                    </div>
-                    <div className="grid-cell text-orange-600 font-bold">
-                      {row.wip}
-                    </div>
-                    <div className="grid-cell text-teal-600 font-bold">
-                      {row.fsb}
-                    </div>
-                    <div className="grid-cell text-green-700 font-bold">
-                      {row.release}
-                    </div>
+                        <div className="grid-cell w-[full] text-xs font-semibold text-slate-700 break-words text-center">
+                          {row.uic}
+                        </div>
+                        {/* PLAN FSB */}
+                        <div className="grid-cell text-blue-600 font-bold">
+                          {row.planFsb
+                            ? formatDateToDDMMMYYYY(row.planFsb)
+                            : 'N/A'}
+                        </div>
 
-                    {/* PLAN RTS */}
-                    <div className="grid-cell text-gray-800 font-bold">
-                      {row.rts && !isNaN(new Date(row.rts).getTime())
-                        ? formatDateToDDMMMYYYY(new Date(row.rts))
-                        : 'N/A'}
-                    </div>
+                        {/* PLAN RTS */}
+                        <div className="grid-cell text-gray-800 font-bold">
+                          {row.rts && !isNaN(new Date(row.rts).getTime())
+                            ? formatDateToDDMMMYYYY(new Date(row.rts))
+                            : 'N/A'}
+                        </div>
 
-                    {/* D-DAY */}
-                    <div
-                      className={
-                        remain !== null
-                          ? remain < 0
-                            ? 'grid-cell text-red-600 font-bold'
-                            : remain <= 3
-                            ? 'grid-cell text-orange-500 font-bold'
-                            : 'grid-cell text-green-600 font-bold'
-                          : 'grid-cell text-gray-400'
-                      }
-                    >
-                      {remain === null ? 'N/A' : remain < 0 ? 'RTS' : remain}
-                    </div>
+                        {/* D-DAY */}
+                        <div
+                          className={
+                            remain !== null
+                              ? remain < 0
+                                ? 'grid-cell text-red-600 font-bold'
+                                : remain <= 3
+                                ? 'grid-cell text-orange-500 font-bold'
+                                : 'grid-cell text-green-600 font-bold'
+                              : 'grid-cell text-gray-400'
+                          }
+                        >
+                          {remain === null
+                            ? 'N/A'
+                            : remain < 0
+                            ? 'RTS'
+                            : remain}
+                        </div>
 
-                    {/* %  */}
-                    <div className="grid-cell w-full">
-                      <ClosedBar closed={row.closed} total={row.totalOrder} />
-                    </div>
-
-                    {/* PLAN FSB */}
-                    <div className="grid-cell text-blue-600 font-bold">
-                      {row.planFsb ? formatDateToDDMMMYYYY(row.planFsb) : 'N/A'}
-                    </div>
-
-                    <div className="grid-cell w-full text-xs font-semibold text-slate-700 break-words text-center">
-                      {row.uic}
-                    </div>
-                  </div>
-                );
-              })}
+                        {/* %  */}
+                        <div className="grid-cell w-full">
+                          <ClosedBar
+                            closed={row.closed}
+                            total={row.totalOrder}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
             </div>
-          </div>
+            <div className="bg-white rounded-md  text-[12px] text-gray mt-8 space-y-1 px-4 ">
+              
+  <div><b className="text-red-600 font-bold">  NOTE :</b></div>
+  <div><b className="text-red-600">O</b> = OPEN (Task/component open)</div>
+  <div><b className="text-yellow-600">P</b> = PROGRESS (Task/component progress)</div>
+  <div><b className="text-green-600">C</b> = CLOSED (Task/component closed)</div>
+  <div><b className=" text-teal-700">AWT</b> = Awaiting (Task/component akan masuk shop)</div>
+  <div><b className="text-blue-600">INC</b> = Incoming (Component masih incoming)</div>
+  <div><b className="text-orange-600">WIP</b> = Work In Progress (Under repair)</div>
+  <div><b className="text-green-600">FSB</b> = Servicable (Task/component closed)</div>
+  <div><b className="text-emerald-700">REL</b> = Release (Component keluar dari shop)</div>
+</div>
+
           </div>
 
           {/* 🧊 Ini pembungkus baru untuk freeze header */}
           <div className="flex-1 min-w-0">
+            {/* ===== TITLE (FIX, TIDAK IKUT SCROLL) ===== */}
+            <div className="bg-transparent text-center text-gray-400 text-md font-bold py-1 rounded-t-lg shadow">
+              PROJECT COMPONENT DETAIL
+            </div>
 
-
-{/* ===== TITLE (FIX, TIDAK IKUT SCROLL) ===== */}
-<div className="bg-transparent text-gray-400 text-md font-bold py-1 rounded-t-lg shadow">
-  PROJECT COMPONENT DETAIL
-</div>
-
-{/* ===== AREA TABLE ===== */}
-<div
-  className={`
+            {/* ===== AREA TABLE ===== */}
+            <div
+              className={`
     w-full rounded-lg shadow-inner dark-scroll
-    ${isScreenshot
-      ? 'overflow-visible max-h-none'
-      : 'overflow-x-auto overflow-y-auto max-h-[80vh]'
+    ${
+      isScreenshot
+        ? 'overflow-visible max-h-none'
+        : 'overflow-x-auto overflow-y-auto max-h-[80vh]'
     }
   `}
->
-  <table
-    className={`
+            >
+              <table
+                className={`
       table-auto text-[12px] leading-tight
       ${isScreenshot ? 'w-full' : 'min-w-max'}
     `}
-  >
-
-              <thead
-                className={`bg-teal-700 shadow
+              >
+                <thead
+                  className={`bg-teal-700 shadow
         ${isScreenshot ? 'static' : 'sticky top-0 z-0'}
       `}
-              >
-                <tr className="sticky  z-10 h-7 bg-[#00838f] text-white text-xs font-semibold text-center">
-                  {/* NO */}
-                  <th className=" px-2 py-1 text-center w-[40px]">No</th>
+                >
+                  <tr className="sticky  z-10 h-7 bg-[#00838f] text-white text-xs font-semibold text-center">
+                    {/* NO */}
+                    <th className=" px-2 py-1 text-center w-[40px]">No</th>
 
-                  {showCheckboxColumn && (
-                    <th className="px-1 py-1">
-                      <input
-                        type="checkbox"
-                        checked={
-                          selectedRows.length === filteredRows.length &&
-                          filteredRows.length > 0
-                        }
-                        onChange={(e) => {
-                          setSelectedRows(
-                            e.target.checked
-                              ? filteredRows.map((r) => r.id)
-                              : []
-                          );
-                        }}
-                      />
+                    {showCheckboxColumn && (
+                      <th className="px-1 py-1">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedRows.length === filteredRows.length &&
+                            filteredRows.length > 0
+                          }
+                          onChange={(e) => {
+                            setSelectedRows(
+                              e.target.checked
+                                ? filteredRows.map((r) => r.id)
+                                : []
+                            );
+                          }}
+                        />
+                      </th>
+                    )}
+
+                    {/* DOC TYPE */}
+                    <th className=" px-2 py-1 text-center">Doc</th>
+                    <th className=" px-2 py-1 text-center">A/C Reg</th>
+                    {/* IDENTIFICATION */}
+                    <th className="px-2 py-1 text-left max-w-[340px]">
+                      IDENTIFICATION
                     </th>
-                  )}
 
-                  {/* DOC TYPE */}
-                  <th className=" px-2 py-1 text-center">Doc</th>
-                  <th className=" px-2 py-1 text-center">A/C Reg</th>
-                  {/* IDENTIFICATION */}
-                  <th className="px-2 py-1 text-left min-w-[440px]">
-                    IDENTIFICATION
-                  </th>
+                    {/* KOLOM LAIN */}
+                    <th className="px-1 py-1 ">ITEM</th>
+                    <th className="px-1 py-1 min-w-[90px]">SHOP</th>
+                    <th className="px-1 py-1  min-w-[100px]">STATUS DOC</th>
+                    <th className="px-1 py-1 min-w-[90px]">STATUS BDP</th>
+                    <th className="px-1 py-1  min-w-[90px]">STATUS JOB</th>
+                    <th className="px-1 py-1">PLAN FSB</th>
+                    <th className="px-1 py-1   min-w-[250px]">REMARK SHOP</th>
+                    <th className="px-1 py-1  min-w-[250px]">REMARK PE/PPC</th>
+                    <th className="px-1 py-1 min-w-[400px]">
+                      TRACKING SHIPMENT
+                    </th>
+                    <th className="px-1 py-1 min-w-[90px]">LINK SCAN </th>
+                    {/* lanjutkan sesuai kebutuhan */}
+                  </tr>
+                </thead>
 
-                  {/* KOLOM LAIN */}
-                  <th className="px-1 py-1 ">ITEM</th>
-                  <th className="px-1 py-1 min-w-[90px]">SHOP</th>
-                  <th className="px-1 py-1  min-w-[100px]">STATUS DOC</th>
-                  <th className="px-1 py-1 min-w-[90px]">STATUS BDP</th>
-                  <th className="px-1 py-1  min-w-[90px]">STATUS JOB</th>
-                  <th className="px-1 py-1">PLAN FSB</th>
-                  <th className="px-1 py-1   min-w-[250px]">REMARK SHOP</th>
-                  <th className="px-1 py-1  min-w-[250px]">REMARK PE/PPC</th>
-                  <th className="px-1 py-1 min-w-[400px]">TRACKING SHIPMENT</th>
-                  <th className="px-1 py-1 min-w-[90px]">LINK SCAN </th>
-                  {/* lanjutkan sesuai kebutuhan */}
-                </tr>
-              </thead>
-
-              <tbody>
-                {paginatedRows.map((row, rowIndex) => (
-                  <tr
-                    key={row.id}
-                    onClick={() => setActiveRow(row.id)}
-                    className={`
+                <tbody>
+                  {paginatedRows.map((row, rowIndex) => (
+                    <tr
+                      key={row.id}
+                      onClick={() => setActiveRow(row.id)}
+                      className={`
         cursor-pointer
         ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
         hover:bg-slate-200
         ${activeRow === row.id ? 'bg-teal-200' : ''}
         transition-colors
       `}
-                  >
-                    {/* NO */}
-                    <td className="border px-2 py-1 text-center text-xs text-gray-600">
-                      {(currentPage - 1) * rowsPerPage + rowIndex + 1}
-                    </td>
-
-                    {/* CHECKBOX */}
-                    {showCheckboxColumn && (
-                      <td className="border px-2 py-1 text-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedRows.includes(row.id)}
-                          onChange={() => toggleSelectRow(row.id)}
-                        />
+                    >
+                      {/* NO */}
+                      <td className="border px-2 py-1 text-center text-xs text-gray-600">
+                        {(currentPage - 1) * rowsPerPage + rowIndex + 1}
                       </td>
-                    )}
-                    {/* DOC TYPE */}
-                    <td className="border px-2 py-1 text-center text-[11px] font-semibold">
-                      {row.doc_type || ''}
-                    </td>
 
-                    <td className="border px-2 py-1 text-center text-[11px] font-semibold min-w-[70px]">
-                      {row.ac_reg || ''}
-                    </td>
+                      {/* CHECKBOX */}
+                      {showCheckboxColumn && (
+                        <td className="border px-2 py-1 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedRows.includes(row.id)}
+                            onChange={() => toggleSelectRow(row.id)}
+                          />
+                        </td>
+                      )}
+                      {/* DOC TYPE */}
+                      <td className="border px-2 py-1 text-center text-[11px] font-semibold">
+                        {row.doc_type || ''}
+                      </td>
 
-                    {/* 🔷 IDENTIFICATION (GABUNGAN) */}
-                    {/* IDENTIFICATION */}
-                    <td className="border px-2 py-1 text-left align-top">
-                      <div className="flex flex-col gap-0.5">
-                        {/* BARIS 1 */}
-                        {(() => {
-                          const idLine = [row.order, row.pn, row.sn].filter(
-                            Boolean
-                          );
+                      <td className="border px-2 py-1 text-center text-[11px] font-semibold min-w-[70px]">
+                        {row.ac_reg || ''}
+                      </td>
 
-                          return (
-                            idLine.length > 0 && (
-                              <span className="font-bold text-blue-600">
-                                {idLine.join(' || ')}
-                              </span>
-                            )
-                          );
-                        })()}
+                      {/* 🔷 IDENTIFICATION (GABUNGAN) */}
+                      {/* IDENTIFICATION */}
+                      <td className="border px-2 py-1 text-left align-top">
+                        <div className="flex flex-col gap-0.5">
+                          {/* BARIS 1 */}
+                          {(() => {
+                            const idLine = [row.order, row.pn, row.sn].filter(
+                              Boolean
+                            );
 
-                        {/* BARIS 2 */}
-                        {row.description && (
-                          <span className="text-gray-700 break-words">
-                            {row.description}
-                          </span>
-                        )}
+                            return (
+                              idLine.length > 0 && (
+                                <span className="font-bold text-blue-600">
+                                  {idLine.join(' || ')}
+                                </span>
+                              )
+                            );
+                          })()}
 
-                        {/* BARIS 3 */}
-                        {(() => {
-                          const metaLine = [row.type_ac, row.category].filter(
-                            Boolean
-                          );
+                          {/* BARIS 2 */}
+                          {row.description && (
+                            <span className="text-gray-700 break-words">
+                              {row.description}
+                            </span>
+                          )}
 
-                          return (
-                            metaLine.length > 0 && (
-                              <span className="text-[10px] text-gray-500 italic">
-                                {metaLine.join(' || ')}
-                              </span>
-                            )
-                          );
-                        })()}
-                      </div>
-                    </td>
+                          {/* BARIS 3 */}
+                          {(() => {
+                            const metaLine = [row.type_ac, row.category].filter(
+                              Boolean
+                            );
 
-                    {/* LOCATION */}
-                    <td className="border px-1 py-1 text-center">
-                      {row.location || ''}
-                    </td>
+                            return (
+                              metaLine.length > 0 && (
+                                <span className="text-[10px] text-gray-500 italic">
+                                  {metaLine.join(' || ')}
+                                </span>
+                              )
+                            );
+                          })()}
+                        </div>
+                      </td>
 
-                    {/* LOCATION */}
-                    <td className="border px-1 py-1 text-center">
-                      {row.shop || ''}
-                    </td>
+                      {/* LOCATION */}
+                      <td className="border px-1 py-1 text-center">
+                        {row.location || ''}
+                      </td>
 
-                    {/* DOC STATUS */}
-                    <td className="border px-1 py-1 text-center ">
-                      <span
-                        className={`px-1 py-0.5 rounded 
+                      {/* LOCATION */}
+                      <td className="border px-1 py-1 text-center">
+                        {row.shop || ''}
+                      </td>
+
+                      {/* DOC STATUS */}
+                      <td className="border px-1 py-1 text-center ">
+                        <span
+                          className={`px-1 py-0.5 rounded 
             ${
               row.doc_status === 'OPEN'
                 ? 'bg-red-500'
@@ -1981,20 +2004,20 @@ export default function BUSH4() {
                 ? 'bg-green-500'
                 : 'bg-transparent'
             }`}
-                      >
-                        {row.doc_status || ''}
-                      </span>
-                    </td>
+                        >
+                          {row.doc_status || ''}
+                        </span>
+                      </td>
 
-                    {/* MATERIAL */}
-                    <td className="border px-1 py-1 text-center">
-                      {row.remark_mat || ''}
-                    </td>
+                      {/* MATERIAL */}
+                      <td className="border px-1 py-1 text-center">
+                        {row.remark_mat || ''}
+                      </td>
 
-                    {/* STATUS JOB */}
-                    <td className="border px-1 py-1 text-center">
-                      <span
-                        className={`px-1 py-0.5 rounded text-white
+                      {/* STATUS JOB */}
+                      <td className="border px-1 py-1 text-center">
+                        <span
+                          className={`px-1 py-0.5 rounded text-white
             ${
               row.status_job === 'OPEN'
                 ? 'bg-red-500'
@@ -2004,109 +2027,108 @@ export default function BUSH4() {
                 ? 'bg-green-500'
                 : 'bg-transparent'
             }`}
-                      >
-                        {row.status_job || ''}
-                      </span>
-                    </td>
-
-                    <td className="border px-1 py-1 text-center whitespace-nowrap">
-                      {row.est_date &&
-                        `${formatDateToDDMMMYYYY(new Date(row.est_date))}`}
-                    </td>
-
-                    <td className="border px-1 py-1 text-left break-words">
-                      {row.remark_pro && `${row.remark_pro}`}
-                    </td>
-
-                    <td className="border px-1 py-1 text-left break-words">
-                      {row.remark && `${row.remark}`}
-                    </td>
-
-                    <td className="border px-1 py-1 text-center break-words">
-                      {row.tracking_sp && `${row.tracking_sp}`}
-                    </td>
-                    <td className="border px-1 py-1 text-center">
-                      {row.link_scan && (
-                        <a
-                          href={row.link_scan}
-                          target="blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 underline hover:text-blue-800"
                         >
-                          SCAN
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          {row.status_job || ''}
+                        </span>
+                      </td>
 
-            {notification && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-                <div className="bg-white px-6 py-4 rounded shadow-lg text-center text-gray-800 text-sm">
-                  {notification}
-                </div>
-              </div>
-            )}
+                      <td className="border px-1 py-1 text-center whitespace-nowrap">
+                        {row.est_date &&
+                          `${formatDateToDDMMMYYYY(new Date(row.est_date))}`}
+                      </td>
 
-            {showConfirmModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                <div className="bg-white p-6 rounded shadow-md w-[90%] max-w-md">
-                  <h2 className="text-lg font-semibold mb-4">Confirmation</h2>
-                  <p className="mb-4">{confirmMessage}</p>{' '}
-                  {/* ← tampilkan pesan dinamis */}
-                  <div className="flex justify-end">
-                    <button
-                      onClick={() => setShowConfirmModal(false)}
-                      className="px-4 py-2 mr-2 text-gray-600 hover:text-gray-800"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={async () => {
-                        setShowConfirmModal(false);
-                        if (pendingAction) {
-                          await pendingAction(); // jalankan aksi
-                          setPendingAction(null);
-                          setSelectedRows([]); // kosongkan ceklis
-                        }
-                      }}
-                      className="px-4 py-2 bg-red-600 text-white hover:bg-red-700"
-                    >
-                      Confirm
-                    </button>
+                      <td className="border px-1 py-1 text-left break-words">
+                        {row.remark_pro && `${row.remark_pro}`}
+                      </td>
+
+                      <td className="border px-1 py-1 text-left break-words">
+                        {row.remark && `${row.remark}`}
+                      </td>
+
+                      <td className="border px-1 py-1 text-center break-words">
+                        {row.tracking_sp && `${row.tracking_sp}`}
+                      </td>
+                      <td className="border px-1 py-1 text-center">
+                        {row.link_scan && (
+                          <a
+                            href={row.link_scan}
+                            target="blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline hover:text-blue-800"
+                          >
+                            SCAN
+                          </a>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {notification && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+                  <div className="bg-white px-6 py-4 rounded shadow-lg text-center text-gray-800 text-sm">
+                    {notification}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {showConfirmModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                  <div className="bg-white p-6 rounded shadow-md w-[90%] max-w-md">
+                    <h2 className="text-lg font-semibold mb-4">Confirmation</h2>
+                    <p className="mb-4">{confirmMessage}</p>{' '}
+                    {/* ← tampilkan pesan dinamis */}
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => setShowConfirmModal(false)}
+                        className="px-4 py-2 mr-2 text-gray-600 hover:text-gray-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setShowConfirmModal(false);
+                          if (pendingAction) {
+                            await pendingAction(); // jalankan aksi
+                            setPendingAction(null);
+                            setSelectedRows([]); // kosongkan ceklis
+                          }
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white hover:bg-red-700"
+                      >
+                        Confirm
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          
-        </div>
-        </div>
 
-        <div className="flex justify-start mt-2 text-white text-[11px] items-center space-x-2">
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-2 py-0.5 rounded border border-gray-500 bg-[#212121] text-white hover:bg-gray-500 shadow"
-          >
-            ◁ Prev
-          </button>
+          <div className="flex justify-start mt-2 text-white text-[11px] items-center space-x-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-2 py-0.5 rounded border border-gray-500 bg-[#212121] text-white hover:bg-gray-500 shadow"
+            >
+              ◁ Prev
+            </button>
 
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
 
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage === totalPages}
-            className="px-2 py-0.5 rounded border border-gray-500 bg-[#212121] text-white hover:bg-gray-500 shadow"
-          >
-            Next ▷
-          </button>
+            <button
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+              className="px-2 py-0.5 rounded border border-gray-500 bg-[#212121] text-white hover:bg-gray-500 shadow"
+            >
+              Next ▷
+            </button>
+          </div>
         </div>
       </div>
     </div>
