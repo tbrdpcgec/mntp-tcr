@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 import { useState, useEffect, useRef } from 'react';
 import CustomSelect from '../components/CustomSelect';
 
-const LOCATIONS = ['AWAITING', 'INCOMING', 'DEPLOYED', 'OUTGOING', 'RELEASE'];
+const LOCATIONS = ['AWAITING', 'INCOMING', 'WIP', 'FSB', 'RELEASE'];
 const DOC_TYPES = ['DN', 'JC', 'MDR', 'PDS'];
 const DOC_STATUS_OPTIONS = [
   '🔴NEED WO',

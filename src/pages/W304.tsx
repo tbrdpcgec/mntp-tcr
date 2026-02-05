@@ -56,7 +56,7 @@ function DownloadPDFButton({
 
     const link = document.createElement('a');
     link.href = url;
-    link.download = `E-HOB MANTAP W304 ${formattedDate} ${shift}.pdf`;
+    link.download = `E-HOB MANTAP WSSS ${formattedDate} ${shift}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
