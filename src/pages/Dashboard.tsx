@@ -371,11 +371,6 @@ export default function BUSH4() {
           .map((row) => [
             row.ac_reg,
             row.order,
-            row.description,
-            row.doc_status,
-            row.status_job,
-            row.remark,
-            row.loc_doc,
           ])
           .map((fields) => fields.join('\t'))
           .join('\n');
@@ -1529,7 +1524,7 @@ export default function BUSH4() {
                         onClick={() => handleAction('copy')}
                         className="block w-full text-left px-2 py-1 hover:bg-gray-100"
                       >
-                        📋 Copy
+                        📋 Copy Order
                       </button>
                       <button
                         onClick={() => handleActionWithConfirmation('save')}
