@@ -428,7 +428,7 @@ export default function W304() {
       year: 'numeric',
     });
 
-    const header = `*DAILY WORKLOAD REPORT*\n*SEAT SHOP*\nTCR-4 | ${shiftType}\n${today}`;
+    const header = `*DAILY WORKLOAD REPORT*\n*SEAT SHOP*\nTCR-3 | ${shiftType}\n${today}`;
     const summary = `\n\n*TOTAL : ${totalOrder} ORDER*\n${totalOpen} OPEN | ${totalProgress} PROGRESS | ${totalClosed} CLOSED`;
 
     const detail = orders
