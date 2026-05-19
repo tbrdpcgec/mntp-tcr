@@ -3,7 +3,13 @@ import { supabase } from '../supabaseClient';
 import * as XLSX from 'xlsx';
 import CustomSelect from '../components/CustomSelect';
 
-import { PieChart, Pie, Cell, Tooltip, Legend, Label } from 'recharts';
+import { PieChart, Pie, Tooltip, Legend, Label } from 'recharts';
+import { BarChart,  Bar,  XAxis,  YAxis,  CartesianGrid, Cell,
+} from 'recharts';
+import {
+  ResponsiveContainer,
+  ReferenceLine, LabelList ,
+} from 'recharts';
 
 const LOCATIONS = ['AWAITING', 'INCOMING', 'WIP', 'FSB', 'RELEASE'];
 const DOC_TYPES = ['DN', 'JC', 'MDR', 'PDS'];
@@ -236,7 +242,7 @@ type OrderFilter = {
 };
 
 const gridCols =
-  'grid-cols-[70px_28px_28px_28px_38px_28px_28px_28px_28px_28px_130px_90px_80px_60px_90px]';
+  'grid-cols-[70px_90px_130px_28px_28px_28px_28px_28px_90px_80px_60px_28px_28px_28px_38px_90px]';
 
 ///inistate
 export default function BUSH4() {
@@ -258,6 +264,12 @@ export default function BUSH4() {
 
   const [sortKey, setSortKey] = useState('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  const [selectedAcReg, setSelectedAcReg] = useState<string | null>(null);
+  const [selectedSummaryAcRegs, setSelectedSummaryAcRegs] = useState<string[]>(
+    []
+  );
+
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [showCheckboxColumn, setShowCheckboxColumn] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -266,13 +278,14 @@ export default function BUSH4() {
 
   const [projectRows, setProjectRows] = useState<any[]>([]);
   const [abmpRows, setAbmpRows] = useState<any[]>([]);
+  const [reportWipOnly, setReportWipOnly] = useState(false);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<null | (() => void)>(null);
   const today = new Date();
   const [showOnlyChecked, setShowOnlyChecked] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
-
+  const [customerFilter, setCustomerFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 100;
 
@@ -288,6 +301,11 @@ export default function BUSH4() {
   const [showOrderSuggestions, setShowOrderSuggestions] = useState(false);
   const [expandedPn, setExpandedPn] = useState<string[]>([]);
   const [isScreenshot, setIsScreenshot] = useState(false);
+  const [isSummaryExpand, setIsSummaryExpand] = useState(false);
+  const [isDetailExpand, setIsDetailExpand] = useState(false);
+
+  const [summaryHeight, setSummaryHeight] = useState(80);
+  const [detailHeight, setDetailHeight] = useState(80);
 
   useEffect(() => {
     if (orderInput.trim() === '') {
@@ -368,10 +386,7 @@ export default function BUSH4() {
       case 'copy':
         const selectedData = rows
           .filter((row) => selectedRows.includes(row.id))
-          .map((row) => [
-            row.ac_reg,
-            row.order,
-          ])
+          .map((row) => [row.ac_reg, row.order])
           .map((fields) => fields.join('\t'))
           .join('\n');
 
@@ -594,7 +609,7 @@ export default function BUSH4() {
       const matchesDocStatus =
         filterDocStatus === '' || row.doc_status === filterDocStatus;
       const matchesStatusJob =
-        filterStatusJob === ''
+        filterStatusJob === '' || filterStatusJob === 'REPORT_WIP'
           ? true
           : filterStatusJob === 'OPEN_PROGRESS'
           ? ['OPEN', 'PROGRESS'].includes((row.status_job || '').toUpperCase())
@@ -693,6 +708,26 @@ export default function BUSH4() {
         : String(bVal).localeCompare(String(aVal));
     });
 
+  const filteredRowsDetail = useMemo(() => {
+    let rows = filteredRows;
+
+    // 1️⃣ Filter dari klik summary
+    if (selectedSummaryAcRegs.length > 0) {
+      rows = rows.filter((r) => selectedSummaryAcRegs.includes(r.ac_reg));
+    }
+
+    // 2️⃣ Jika pilih REPORT_WIP di dropdown
+    if (filterStatusJob === 'REPORT_WIP') {
+      rows = rows.filter((row) => {
+        const status = (row.status_job || '').toUpperCase();
+
+        return status === 'OPEN' || status === 'PROGRESS';
+      });
+    }
+
+    return rows;
+  }, [filteredRows, selectedSummaryAcRegs, filterStatusJob]);
+
   // helper kecil (opsional) untuk memastikan cek_sm1 benar-benar terdeteksi
   const isChecked = (v: any) => {
     // sesuaikan kalau cek_sm1 bisa jadi '1'/'0' atau 'Y'/'N'
@@ -704,6 +739,14 @@ export default function BUSH4() {
       !!v
     );
   };
+
+  const detailRows = filteredRows.filter((row) => {
+    if (!reportWipOnly) return true;
+
+    const status = (row.status_job || '').toUpperCase();
+
+    return status === 'OPEN' || status === 'PROGRESS';
+  });
 
   // helper untuk normalisasi status
   const getStatus = (s: any) =>
@@ -721,7 +764,7 @@ export default function BUSH4() {
   };
 
   const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
-  const paginatedRows = filteredRows.slice(
+  const paginatedRows = filteredRowsDetail.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
@@ -820,7 +863,7 @@ export default function BUSH4() {
     const futureRows = rows
       .filter(
         (r) =>
-          r.doc_type === 'PDS' &&
+          (r.doc_type === 'PDS' || r.doc_type === 'MDR') &&
           r.pn?.includes(pnMatch) &&
           r.est_date &&
           !r.archived
@@ -852,7 +895,9 @@ export default function BUSH4() {
   const rotableSummary = pnList.map((pn) => {
     const rows = rotableBaseRows.filter(
       (r) =>
-        r.doc_type === 'PDS' && r.archived === false && r.pn?.includes(pn.match)
+        (r.doc_type === 'PDS' || r.doc_type === 'MDR') &&
+        r.archived === false &&
+        r.pn?.includes(pn.match)
     );
 
     const remain = rows.filter((r) => r.location === 'FSB').length;
@@ -927,14 +972,14 @@ export default function BUSH4() {
 
   ////blok pn
   const projectSummary = useMemo(() => {
-    if (!rawRows?.length) return [];
+    if (!filteredRows?.length) return [];
 
     const uniqAcReg = Array.from(
-      new Set(rawRows.map((r) => r.ac_reg).filter(Boolean))
+      new Set(filteredRows.map((r) => r.ac_reg).filter(Boolean))
     );
 
     return uniqAcReg.map((acReg, index) => {
-      const rowsByAc = rawRows.filter((r) => r.ac_reg === acReg);
+      const rowsByAc = filteredRows.filter((r) => r.ac_reg === acReg);
 
       const planFsb = (() => {
         const dates = rowsByAc
@@ -991,9 +1036,13 @@ export default function BUSH4() {
         )
       ).join(' / ');
 
+      // ===== CUSTOMER =====
+      const customer = rowsByAc[0]?.customer || '-';
+
       return {
         no: index + 1,
         acReg,
+        customer,
 
         // status job
         open,
@@ -1014,7 +1063,7 @@ export default function BUSH4() {
         uic: uicShops || 'PE/PPC', // fallback kalau kosong
       };
     });
-  }, [rawRows]);
+  }, [filteredRows]);
 
   ////remaindays
   const getRemainDays = (dateStr: string) => {
@@ -1032,6 +1081,39 @@ export default function BUSH4() {
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   };
 
+  ////table customer
+  const customerSummary = useMemo(() => {
+    const activeRows = projectSummary.filter((row) => {
+      const remain = getRemainDays(row.rts);
+      return remain !== null && remain >= 0;
+    });
+
+    return {
+      total: activeRows.length,
+
+      garuda: activeRows.filter(
+        (r) => r.customer?.toUpperCase() === 'GARUDA INDONESIA'
+      ).length,
+
+      citilink: activeRows.filter(
+        (r) => r.customer?.toUpperCase() === 'CITILINK'
+      ).length,
+
+      nonGaCtv: activeRows.filter((r) => {
+        const c = r.customer?.toUpperCase();
+
+        return (
+          c !== 'GARUDA INDONESIA' && c !== 'CITILINK' && c !== 'NON PROJECT'
+        );
+      }).length,
+
+      rts7: activeRows.filter((r) => {
+        const remain = getRemainDays(r.rts);
+        return remain !== null && remain <= 7;
+      }).length,
+    };
+  }, [projectSummary]);
+
   ////filter ac
 
   const acRegSuggestions = useMemo(() => {
@@ -1039,23 +1121,263 @@ export default function BUSH4() {
   }, [rows]);
 
   ////  sortir ac reg
-  const sortedProjectSummary = [...projectSummary].sort((a, b) => {
+  const filteredProjectSummary = projectSummary.filter((row) => {
+    const c = row.customer?.toUpperCase();
+
+    if (customerFilter === 'GARUDA') return c === 'GARUDA INDONESIA';
+
+    if (customerFilter === 'CITILINK') return c === 'CITILINK';
+
+    if (customerFilter === 'NON')
+      return (
+        c !== 'GARUDA INDONESIA' && c !== 'CITILINK' && c !== 'NON PROJECT'
+      );
+
+    if (customerFilter === 'RTS7') {
+      const remain = getRemainDays(row.rts);
+      return remain !== null && remain >= 0 && remain <= 7;
+    }
+
+    return true;
+  });
+
+  const sortedProjectSummary = [...filteredProjectSummary].sort((a, b) => {
     const ra = getRemainDays(a.rts);
     const rb = getRemainDays(b.rts);
 
-    // null → paling bawah
     if (ra === null && rb === null) return 0;
     if (ra === null) return 1;
     if (rb === null) return -1;
 
-    // overdue (<= -1) → paling bawah
     if (ra <= -1 && rb <= -1) return 0;
     if (ra <= -1) return 1;
     if (rb <= -1) return -1;
 
-    // sisanya (0,1,2,...) urut naik
     return ra - rb;
   });
+
+  /////////chart
+  const ProcessChart = ({ title, chart }: any) => {
+    if (!chart) return null;
+  
+    const data = [
+      {
+        name: title,
+        open: chart.open || 0,
+        progress: chart.progress || 0,
+        closed: chart.closed || 0,
+      },
+    ];
+  
+    return (
+      <div className="border rounded-[10px] shadow bg-white p-1 w-full">
+        
+        {/* TITLE */}
+        <h3 className="text-[11px] font-bold text-center text-gray-700 mb-0">
+          {title}
+        </h3>
+  
+        {/* STACKED BAR */}
+        <div className="w-full h-[30px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              layout="vertical"
+              data={data}
+              margin={{
+                top: 2,
+                right: 4,
+                left: 4,
+                bottom: 2,
+              }}
+            >
+              <XAxis
+                type="number"
+                hide
+              />
+  
+              <YAxis
+                type="category"
+                dataKey="name"
+                hide
+              />
+  
+  <Tooltip
+  contentStyle={{
+    padding: '2px 6px',
+    fontSize: '11px',
+    borderRadius: '6px',
+  }}
+/>
+  
+              {/* OPEN */}
+             {/* OPEN */}
+<Bar
+  dataKey="open"
+  stackId="a"
+  fill="#ef4444"
+  radius={[0, 0, 0, 0]}
+>
+  <LabelList
+    dataKey="open"
+    position="insideRight"
+    formatter={(value: number) =>
+      chart.total
+        ? `${Math.round((value / chart.total) * 100)}%`
+        : '0%'
+    }
+    style={{
+      fill: 'white',
+      fontSize: '9px',
+      fontWeight: '',
+    }}
+  />
+</Bar>
+  
+              {/* PROGRESS */}
+            {/* PROGRESS */}
+<Bar
+  dataKey="progress"
+  stackId="a"
+  fill="#eab308"
+>
+  <LabelList
+    dataKey="progress"
+    position="insideRight"
+    formatter={(value: number) =>
+      chart.total
+        ? `${Math.round((value / chart.total) * 100)}%`
+        : '0%'
+    }
+    style={{
+      fill: 'white',
+      fontSize: '9px',
+      fontWeight: '',
+    }}
+  />
+</Bar>
+  
+              {/* CLOSED */}
+              {/* CLOSED */}
+<Bar
+  dataKey="closed"
+  stackId="a"
+  fill="#22c55e"
+  radius={[0, 0, 0, 0]}
+>
+  <LabelList
+    dataKey="closed"
+    position="insideRight"
+    formatter={(value: number) =>
+      chart.total
+        ? `${Math.round((value / chart.total) * 100)}%`
+        : '0%'
+    }
+    style={{
+      fill: 'white',
+      fontSize: '9px',
+      fontWeight: '',
+    }}
+  />
+</Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+  
+        {/* LEGEND */}
+<div className="flex justify-center gap-2 text-[11px] mt-0 flex-wrap">
+  
+  <div className="flex items-center gap-1">
+    <div className="w-2 h-2 bg-red-500 " />
+    <span>
+      {chart.open || 0}
+    </span>
+  </div>
+
+  <div className="flex items-center gap-1">
+    <div className="w-2 h-2 bg-yellow-500 " />
+    <span>
+      {chart.progress || 0}
+    </span>
+  </div>
+
+  <div className="flex items-center gap-1">
+    <div className="w-2 h-2 bg-green-500 " />
+    <span>
+      {chart.closed || 0}
+    </span>
+  </div>
+
+</div>
+  
+        {/* FOOTER */}
+        <div className="flex justify-between mt-0 px-1 text-[11px] font-bold text-gray-700">
+          <span>TOTAL : {chart.total || 0}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const buildChartDataByShop = (targetShop: string) => {
+    const activeRows =
+      selectedSummaryAcRegs.length > 0
+        ? rows.filter((r) => selectedSummaryAcRegs.includes(r.ac_reg))
+        : rows;
+  
+    const filteredRows = activeRows.filter((r) =>
+      String(r.shop || '')
+        .toUpperCase()
+        .includes(targetShop.toUpperCase())
+    );
+  
+    let open = 0;
+    let progress = 0;
+    let closed = 0;
+    let undefinedStatus = 0;
+  
+    filteredRows.forEach((row) => {
+      const status = getStatus(row.status_job);
+  
+      if (!status) {
+        undefinedStatus++;
+        return;
+      }
+  
+      if (status === 'OPEN') {
+        open++;
+      } else if (status === 'PROGRESS') {
+        progress++;
+      } else if (status === 'CLOSED') {
+        closed++;
+      } else {
+        undefinedStatus++;
+      }
+    });
+  
+    const total = open + progress + closed + undefinedStatus;
+  
+    const percentage =
+      total > 0 ? Math.round((closed / total) * 100) : 0;
+  
+    return {
+      total,
+      percentage,
+  
+      open,
+      progress,
+      closed,
+      undefinedStatus,
+    };
+  };
+
+  const getRowStatus = (row: any) => {
+    return getStatus(row.status_job) || 'UNDEFINED';
+  };
+  const chartSheetmetal = buildChartDataByShop('SHEETMETAL');
+  const chartComposite = buildChartDataByShop('COMPOSITE');
+  const chartSeat = buildChartDataByShop('SEAT');
+  const chartCabin = buildChartDataByShop('CABIN');
+  const chartMachining = buildChartDataByShop('MACHINING');
+  const chartPpPpc = buildChartDataByShop('PE/PPC');
 
   /////ini return
   return (
@@ -1065,12 +1387,12 @@ export default function BUSH4() {
       }
     >
       <div className="bg-[#141414] w-full h-full">
-        <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[590vh] overflow-hidden w-full rounded-lg ">
+        <div className="bg-[#292929] px-3 pt-3 pb-6 max-h-[680vh] overflow-hidden w-full rounded-lg ">
           {/* ================= ROTABLE COMPONENT SUMMARY ================= */}
           <div className="w-full mb-2">
             {/* ===== TITLE (FIX, TIDAK IKUT SCROLL) ===== */}
             <div className="bg-transparent text-md font-bold text-gray-400 text-center py-2 rounded-t-[10px] shadow">
-              ROTABLE COMPONENT SUMMARY
+              ROLL OVER COMPONENT SUMMARY
             </div>
 
             {/* ===== SCROLL AREA ===== */}
@@ -1351,7 +1673,9 @@ export default function BUSH4() {
               </div>
             </div>
           </div>
-
+          <div className="bg-transparent text-gray-400 text-md font-bold text-center py-1 rounded-t-lg shadow">
+            PROJECT SUMMARY
+          </div>
           <div className="mb-2 flex items-start gap-2 overflow-hidden">
             {/* Kotak input + chips */}
             <div className="flex flex-wrap gap-1 border border-gray-500 rounded-md px-1 py-1 relative flex-1">
@@ -1613,94 +1937,280 @@ export default function BUSH4() {
                 { label: 'PROGRESS', value: 'PROGRESS' },
                 { label: 'OPEN + PROGRESS', value: 'OPEN_PROGRESS' }, // ✅ tambahan
                 { label: 'CLOSED', value: 'CLOSED' },
+                { label: 'Report WIP', value: 'REPORT_WIP' }, // baru
               ]}
               className="border border-gray-500 rounded-md px-1 py-1 text-[11px] hover:bg-gray-500 shadow w-[120px]"
             />
-
-            <button
-              onClick={() => setIsScreenshot((v) => !v)}
-              className="px-3 py-1 text-xs bg-slate-700 text-white rounded hover:bg-slate-600"
-            >
-              {isScreenshot ? 'Expand' : 'Collapse'}
-            </button>
           </div>
 
-          {/* 📊 Status Summary dan Donut Chart */}
           {/* 👇 PEMBUNGKUS 2 TABEL */}
-          <div className="flex gap-2 w-full items-start mb-3 overflow-hidden">
-            {/* ===== WRAPPER UTAMA ===== */}
-            <div className="w-[800px]  flex-none">
-              {/* ===== TITLE (DI ATAS, TIDAK IKUT SCROLL) ===== */}
-              <div className="bg-transparent text-gray-400 text-md font-bold text-center py-1 rounded-t-lg shadow">
-                PROJECT COMPONENT SUMMARY
+          <div className="w-full flex gap-3 items-start">
+            {/* ================= LEFT: CHART ================= */}
+            <div className="w-full min-w-[290px] max-w-[30vw] flex flex-col gap-2 shrink-0">
+              <div className="w-full flex flex-col gap-2">
+                {/* 🔥 CHART SECTION */}
+                <div className="grid grid-cols-1 gap-2">
+                  <ProcessChart title="SHEET METAL" chart={chartSheetmetal} />
+                  <ProcessChart title="COMPOSITE" chart={chartComposite} />
+                  <ProcessChart title="SEAT" chart={chartSeat} />
+                  <ProcessChart title="CABIN" chart={chartCabin} />
+                  <ProcessChart title="MACHINING" chart={chartMachining} />
+                  
+                </div>
               </div>
+            </div>
 
-              {/* ===== AREA TABLE (SCROLL / SCREENSHOT) ===== */}
-              <div
-                className={`rounded-lg shadow-inner dark-scroll
-      ${
-        isScreenshot
-          ? 'overflow-visible max-h-none'
-          : 'overflow-x-auto overflow-y-auto max-h-[50vh]'
-      }
-    `}
-              >
+            {/* ================= RIGHT SIDE ================= */}
+            <div className="flex-1 flex flex-col gap-2 min-w-0">
+              {/* ===== TOP RIGHT: BOX SUMMARY ===== */}
+              <div className="flex gap-2 flex-wrap">
+                {/* KOTAK GARUDA */}
                 <div
-                  className={`
-    rounded-lg shadow
-    ${isScreenshot ? 'w-full' : 'min-w-max'}
+                  onClick={() => {
+                    const next = customerFilter === 'GARUDA' ? 'ALL' : 'GARUDA';
+
+                    setCustomerFilter(next);
+
+                    if (next === 'ALL') {
+                      setSelectedSummaryAcRegs([]);
+                    } else {
+                      const acRegs = projectSummary
+                        .filter((r) => {
+                          const remain = getRemainDays(r.rts);
+
+                          return (
+                            r.customer?.toUpperCase() === 'GARUDA INDONESIA' &&
+                            remain !== null &&
+                            remain >= 0
+                          );
+                        })
+                        .map((r) => r.acReg);
+
+                      setSelectedSummaryAcRegs(acRegs);
+                    }
+                  }}
+                  className={`  w-[170px]
+cursor-pointer p-3 rounded-lg shadow text-center font-bold transition-all
+hover:scale-105 hover:shadow-lg 
+${
+  customerFilter === 'GARUDA'
+    ? 'bg-blue-800 ring-2 ring-blue-300 text-white'
+    : 'bg-blue-600 text-white'
+}
+`}
+                >
+                  <div className="text-xs">GARUDA</div>
+                  <div className="text-2xl font-bold">
+                    {customerSummary.garuda}
+                  </div>
+                </div>
+                {/* KOTAK CITILINK */}
+                <div
+                  onClick={() => {
+                    const next =
+                      customerFilter === 'CITILINK' ? 'ALL' : 'CITILINK';
+
+                    setCustomerFilter(next);
+
+                    if (next === 'ALL') {
+                      setSelectedSummaryAcRegs([]);
+                    } else {
+                      const acRegs = projectSummary
+                        .filter((r) => {
+                          const remain = getRemainDays(r.rts);
+
+                          return (
+                            r.customer?.toUpperCase() === 'CITILINK' &&
+                            remain !== null &&
+                            remain >= 0
+                          );
+                        })
+                        .map((r) => r.acReg);
+
+                      setSelectedSummaryAcRegs(acRegs);
+                    }
+                  }}
+                  className={` w-[170px]
+cursor-pointer p-3 rounded-lg shadow text-center transition-all font-bold
+hover:scale-105 hover:shadow-lg
+${
+  customerFilter === 'CITILINK'
+    ? 'bg-green-800 ring-2 ring-green-300 text-white'
+    : 'bg-green-600 text-white'
+}
+`}
+                >
+                  <div className="text-xs">CITILINK</div>
+                  <div className="text-2xl font-bold">
+                    {customerSummary.citilink}
+                  </div>
+                </div>
+                {/* KOTAK NON */}
+                <div
+                  onClick={() => {
+                    const next = customerFilter === 'NON' ? 'ALL' : 'NON';
+
+                    setCustomerFilter(next);
+
+                    if (next === 'ALL') {
+                      setSelectedSummaryAcRegs([]);
+                    } else {
+                      const acRegs = projectSummary
+                        .filter((r) => {
+                          const c = r.customer?.toUpperCase();
+                          const remain = getRemainDays(r.rts);
+
+                          return (
+                            c !== 'GARUDA INDONESIA' &&
+                            c !== 'CITILINK' &&
+                            c !== 'NON PROJECT' &&
+                            remain !== null &&
+                            remain >= 0
+                          );
+                        })
+                        .map((r) => r.acReg);
+
+                      setSelectedSummaryAcRegs(acRegs);
+                    }
+                  }}
+                  className={` w-[170px]
+cursor-pointer p-3 rounded-lg shadow text-center transition-all font-bold
+hover:scale-105 hover:shadow-lg
+${
+  customerFilter === 'NON'
+    ? 'bg-yellow-600 ring-2 ring-yellow-300 text-black'
+    : 'bg-yellow-400 text-black'
+}
+`}
+                >
+                  <div className="text-xs">NON GA/CTV</div>
+                  <div className="text-2xl font-bold">
+                    {customerSummary.nonGaCtv}
+                  </div>
+                </div>
+
+                {/* KOTAK TOTAL */}
+                <div
+                  onClick={() => {
+                    setCustomerFilter('ALL');
+                    setSelectedSummaryAcRegs([]);
+                  }}
+                  className={` w-[170px]
+cursor-pointer p-3 rounded-lg shadow text-center transition-all font-bold
+hover:scale-105 hover:shadow-lg
+${
+  customerFilter === 'ALL'
+    ? 'bg-purple-800  ring-purple-300 text-white'
+    : 'bg-purple-600 text-white'
+}
+`}
+                >
+                  <div className="text-xs">TOTAL CUSTOMER</div>
+                  <div className="text-2xl font-bold">
+                    {customerSummary.total}
+                  </div>
+                </div>
+
+                {/* rts7 */}
+                <div
+                  onClick={() => {
+                    const next = customerFilter === 'RTS7' ? 'ALL' : 'RTS7';
+
+                    setCustomerFilter(next);
+
+                    if (next === 'ALL') {
+                      setSelectedSummaryAcRegs([]);
+                    } else {
+                      const acRegs = projectSummary
+                        .filter((r) => {
+                          const remain = getRemainDays(r.rts);
+                          return remain !== null && remain >= 0 && remain <= 7;
+                        })
+                        .map((r) => r.acReg);
+
+                      setSelectedSummaryAcRegs(acRegs);
+                    }
+                  }}
+                  className={` w-[160px]
+    cursor-pointer p-3 rounded-lg shadow text-center transition-all font-bold
+    hover:scale-105 hover:shadow-lg
+    ${
+      customerFilter === 'RTS7'
+        ? 'bg-red-700 ring-2 ring-red-300 text-white'
+        : 'bg-red-500 text-white'
+    }
   `}
                 >
-                  {/* HEADER */}
+                  <div className="text-xs font-semibold">RTS D-7</div>
+                  <div className="text-2xl font-bold">
+                    {customerSummary.rts7}
+                  </div>
+                </div>
+              </div>
+
+              {/* ===== RIGHT BOTTOM: TABLE SUMMARY ===== */}
+              <div className="flex-1">
+                <div
+                  className="rounded-lg shadow-inner dark-scroll overflow-auto"
+                  style={{
+                    maxHeight: isSummaryExpand ? `${summaryHeight}vh` : '60vh',
+                  }}
+                >
                   <div
-                    className={`
+                    className={`${isScreenshot ? 'w-full' : 'w-max min-w-max'}`}
+                  >
+                    {/* HEADER */}
+                    <div
+                      className={`
     sticky top-[0px] z-20
     grid ${gridCols}
     h-7 text-xs font-bold text-white text-center
     bg-[#00838f]
   `}
-                  >
-                    {/* BASIC */}
-                    <div className="grid-cell">A/C</div>
+                    >
+                      {/* BASIC */}
+                      <div className="grid-cell">A/C</div>
 
-                    {/* STATUS */}
-                    <div className="grid-cell bg-red-600">O</div>
-                    <div className="grid-cell bg-yellow-600">P</div>
-                    <div className="grid-cell bg-green-600">C</div>
-                    <div className="grid-cell bg-[#0277bd]">Total</div>
+                      <div className="grid-cell">CUSTOMER</div>
+                      <div className="grid-cell bg-[#0277bd]">UIC</div>
 
-                    {/* LOCATION */}
-                    <div className="rotate-header bg-teal-600">AWT</div>
-                    <div className="rotate-header bg-teal-600">INC</div>
-                    <div className="rotate-header bg-teal-600">WIP</div>
-                    <div className="rotate-header bg-teal-600">FSB</div>
-                    <div className="rotate-header bg-teal-600">REL</div>
+                      {/* LOCATION */}
+                      <div className="rotate-header bg-teal-600">AWT</div>
+                      <div className="rotate-header bg-teal-600">INC</div>
+                      <div className="rotate-header bg-teal-600">WIP</div>
+                      <div className="rotate-header bg-teal-600">FSB</div>
+                      <div className="rotate-header bg-teal-600">REL</div>
 
-                    <div className="grid-cell bg-[#0277bd]">UIC</div>
+                      {/* DATE / KPI */}
 
-                    {/* DATE / KPI */}
+                      <div className="grid-cell">PLAN FSB</div>
+                      <div className="grid-cell">PLAN RTS</div>
+                      <div className="grid-cell">D-DAY</div>
 
-                    <div className="grid-cell">PLAN FSB</div>
-                    <div className="grid-cell">PLAN RTS</div>
-                    <div className="grid-cell">D-DAY</div>
-                    <div className="grid-cell">%</div>
-                  </div>
+                      {/* STATUS */}
+                      <div className="grid-cell bg-red-600">O</div>
+                      <div className="grid-cell bg-yellow-600">P</div>
+                      <div className="grid-cell bg-green-600">C</div>
+                      <div className="grid-cell bg-[#0277bd]">Total</div>
 
-                  {/* ROWS */}
-                  {sortedProjectSummary.map((row, index) => {
-                    const remain = getRemainDays(row.rts);
+                      <div className="grid-cell">%</div>
+                    </div>
 
-                    return (
-                      <div
-                        key={row.acReg}
-                        onClick={() =>
-                          setFilterAcRegs((prev) =>
-                            prev.includes(row.acReg)
-                              ? prev.filter((ac) => ac !== row.acReg)
-                              : [...prev, row.acReg]
-                          )
-                        }
-                        className={`
+                    {/* ROWS */}
+                    {sortedProjectSummary.map((row, index) => {
+                      const remain = getRemainDays(row.rts);
+
+                      return (
+                        <div
+                          key={row.acReg}
+                          onClick={() =>
+                            setSelectedSummaryAcRegs((prev) =>
+                              prev.includes(row.acReg)
+                                ? prev.filter((ac) => ac !== row.acReg)
+                                : [...prev, row.acReg]
+                            )
+                          }
+                          className={`
         grid ${gridCols}
         items-stretch
         text-xs border-t
@@ -1708,140 +2218,173 @@ export default function BUSH4() {
         py-1
 
         ${
-          filterAcRegs.includes(row.acReg)
+          selectedSummaryAcRegs.includes(row.acReg)
             ? 'bg-teal-200 dark:bg-teal-700'
             : index % 2 === 0
             ? 'bg-white dark:bg-slate-800'
             : 'bg-gray-100 dark:bg-slate-700'
         }
+        
+        
 
         hover:bg-slate-300 dark:hover:bg-slate-600
       `}
-                      >
-                        {/* AC */}
-                        <div className="grid-cell text-gray-800 font-bold">
-                          {row.acReg}
-                        </div>
-
-                        {/* STATUS */}
-                        <div className="grid-cell text-red-600 font-bold">
-                          {row.open}
-                        </div>
-                        <div className="grid-cell text-yellow-600 font-bold">
-                          {row.progress}
-                        </div>
-                        <div className="grid-cell text-green-600 font-bold">
-                          {row.closed}
-                        </div>
-                        <div className="grid-cell text-purple-600 font-bold">
-                          {row.totalOrder}
-                        </div>
-
-                        {/* LOCATION FLOW */}
-                        <div className="grid-cell text-gray-700">
-                          {row.awaiting}
-                        </div>
-                        <div className="grid-cell text-blue-600 font-bold">
-                          {row.incoming}
-                        </div>
-                        <div className="grid-cell text-orange-600 font-bold">
-                          {row.wip}
-                        </div>
-                        <div className="grid-cell text-teal-600 font-bold">
-                          {row.fsb}
-                        </div>
-                        <div className="grid-cell text-green-700 font-bold">
-                          {row.release}
-                        </div>
-
-                        <div className="grid-cell w-[full] text-xs font-semibold text-slate-700 break-words text-center">
-                          {row.uic}
-                        </div>
-                        {/* PLAN FSB */}
-                        <div className="grid-cell text-blue-600 font-bold">
-                          {row.planFsb
-                            ? formatDateToDDMMMYYYY(row.planFsb)
-                            : 'N/A'}
-                        </div>
-
-                        {/* PLAN RTS */}
-                        <div className="grid-cell text-gray-800 font-bold">
-                          {row.rts && !isNaN(new Date(row.rts).getTime())
-                            ? formatDateToDDMMMYYYY(new Date(row.rts))
-                            : 'N/A'}
-                        </div>
-
-                        {/* D-DAY */}
-                        <div
-                          className={
-                            remain !== null
-                              ? remain < 0
-                                ? 'grid-cell text-red-600 font-bold'
-                                : remain <= 3
-                                ? 'grid-cell text-orange-500 font-bold'
-                                : 'grid-cell text-green-600 font-bold'
-                              : 'grid-cell text-gray-400'
-                          }
                         >
-                          {remain === null
-                            ? 'N/A'
-                            : remain < 0
-                            ? 'RTS'
-                            : remain}
-                        </div>
+                          {/* AC */}
+                          <div className="grid-cell text-gray-800 font-bold">
+                            {row.acReg}
+                          </div>
 
-                        {/* %  */}
-                        <div className="grid-cell w-full">
-                          <ClosedBar
-                            closed={row.closed}
-                            total={row.totalOrder}
-                          />
+                          {/* CUSTOMER */}
+                          <div
+                            className={`grid-cell text-xs font-bold text-center ${
+                              row.customer?.toUpperCase() === 'CITILINK'
+                                ? 'text-green-600'
+                                : row.customer?.toUpperCase() ===
+                                  'GARUDA INDONESIA'
+                                ? 'text-blue-600'
+                                : row.customer?.toUpperCase() === 'NON PROJECT'
+                                ? 'text-purple-600'
+                                : 'text-orange-600'
+                            }`}
+                          >
+                            {row.customer}
+                          </div>
+
+                          <div className="grid-cell w-[full] text-xs font-semibold text-slate-700 break-words text-center">
+                            {row.uic}
+                          </div>
+
+                          {/* LOCATION FLOW */}
+                          <div className="grid-cell text-gray-700">
+                            {row.awaiting}
+                          </div>
+                          <div className="grid-cell text-blue-600 font-bold">
+                            {row.incoming}
+                          </div>
+                          <div className="grid-cell text-orange-600 font-bold">
+                            {row.wip}
+                          </div>
+                          <div className="grid-cell text-teal-600 font-bold">
+                            {row.fsb}
+                          </div>
+                          <div className="grid-cell text-green-700 font-bold">
+                            {row.release}
+                          </div>
+
+                          {/* PLAN FSB */}
+                          <div className="grid-cell text-blue-600 font-bold">
+                            {row.planFsb
+                              ? formatDateToDDMMMYYYY(row.planFsb)
+                              : 'TBD'}
+                          </div>
+
+                          {/* PLAN RTS */}
+                          <div className="grid-cell text-gray-800 font-bold">
+                            {row.rts && !isNaN(new Date(row.rts).getTime())
+                              ? formatDateToDDMMMYYYY(new Date(row.rts))
+                              : 'TBD'}
+                          </div>
+
+                          {/* D-DAY */}
+                          <div
+                            className={
+                              remain !== null
+                                ? remain < 0
+                                  ? 'grid-cell text-gray-400 font-bold'
+                                  : remain <= 3
+                                  ? 'grid-cell text-red-500 font-bold'
+                                  : 'grid-cell text-green-600 font-bold'
+                                : 'grid-cell text-gray-400  font-bold'
+                            }
+                          >
+                            {remain === null
+                              ? 'N/A'
+                              : remain < 0
+                              ? 'RTS'
+                              : remain}
+                          </div>
+
+                          {/* STATUS */}
+                          <div className="grid-cell text-red-600 font-bold">
+                            {row.open}
+                          </div>
+                          <div className="grid-cell text-yellow-600 font-bold">
+                            {row.progress}
+                          </div>
+                          <div className="grid-cell text-green-600 font-bold">
+                            {row.closed}
+                          </div>
+                          <div className="grid-cell text-purple-600 font-bold">
+                            {row.totalOrder}
+                          </div>
+
+                          {/* %  */}
+                          <div className="grid-cell w-full">
+                            <ClosedBar
+                              closed={row.closed}
+                              total={row.totalOrder}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex gap-1 px-2 py-2">
+                  {/* Expand */}
+                  <button
+                    onClick={() => setIsSummaryExpand((v) => !v)}
+                    className="px-2 py-0.5 w-30 h-6 rounded border border-gray-500 bg-[#212121] hover:bg-slate-600 text-xs text-white "
+                  >
+                    {isSummaryExpand ? 'Collapse' : 'Expand'}
+                  </button>
+
+                  {/* Tambah tinggi */}
+                  {isSummaryExpand && (
+                    <>
+                      <button
+                        onClick={() => setSummaryHeight((h) => h + 30)}
+                        className="w-7 h-6 border border-gray-500 bg-[#212121] text-white rounded hover:bg-green-700 text-xs "
+                      >
+                        +
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          setSummaryHeight((h) => Math.max(30, h - 30))
+                        }
+                        className="w-7 h-6 border border-gray-500 bg-[#212121] text-white rounded hover:bg-red-700 text-xs "
+                      >
+                        −
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
-              
             </div>
-            <div className="bg-white rounded-md  text-[12px] text-gray mt-8 space-y-1 px-4 ">
-              
-  <div><b className="text-red-600 font-bold">  NOTE :</b></div>
-  <div><b className="text-red-600">O</b> = OPEN (Task/component open)</div>
-  <div><b className="text-yellow-600">P</b> = PROGRESS (Task/component progress)</div>
-  <div><b className="text-green-600">C</b> = CLOSED (Task/component closed)</div>
-  <div><b className=" text-teal-700">AWT</b> = Awaiting (Task/component akan masuk shop)</div>
-  <div><b className="text-blue-600">INC</b> = Incoming (Component masih incoming)</div>
-  <div><b className="text-orange-600">WIP</b> = Work In Progress (Under repair)</div>
-  <div><b className="text-green-600">FSB</b> = Servicable (Task/component closed)</div>
-  <div><b className="text-emerald-700">REL</b> = Release (Component keluar dari shop)</div>
-</div>
-
           </div>
 
           {/* 🧊 Ini pembungkus baru untuk freeze header */}
           <div className="flex-1 min-w-0">
             {/* ===== TITLE (FIX, TIDAK IKUT SCROLL) ===== */}
             <div className="bg-transparent text-center text-gray-400 text-md font-bold py-1 rounded-t-lg shadow">
-              PROJECT COMPONENT DETAIL
+              PROJECT DETAIL
             </div>
 
             {/* ===== AREA TABLE ===== */}
             <div
-              className={`
-    w-full rounded-lg shadow-inner dark-scroll
-    ${
-      isScreenshot
-        ? 'overflow-visible max-h-none'
-        : 'overflow-x-auto overflow-y-auto max-h-[80vh]'
-    }
-  `}
+              className="w-full rounded-lg shadow-inner dark-scroll overflow-auto"
+              style={{
+                maxHeight: isDetailExpand ? `${detailHeight}vh` : '60vh',
+              }}
             >
               <table
                 className={`
-      table-auto text-[12px] leading-tight
-      ${isScreenshot ? 'w-full' : 'min-w-max'}
-    `}
+    table-fixed text-[12px] leading-tight
+    ${isScreenshot ? 'w-full' : 'min-w-max'}
+  `}
               >
                 <thead
                   className={`bg-teal-700 shadow
@@ -1875,7 +2418,7 @@ export default function BUSH4() {
                     <th className=" px-2 py-1 text-center">Doc</th>
                     <th className=" px-2 py-1 text-center">A/C Reg</th>
                     {/* IDENTIFICATION */}
-                    <th className="px-2 py-1 text-left max-w-[340px]">
+                    <th className="px-2 py-1 text-left w-[400px]">
                       IDENTIFICATION
                     </th>
 
@@ -1886,7 +2429,9 @@ export default function BUSH4() {
                     <th className="px-1 py-1 min-w-[90px]">STATUS BDP</th>
                     <th className="px-1 py-1  min-w-[90px]">STATUS JOB</th>
                     <th className="px-1 py-1">PLAN FSB</th>
-                    <th className="px-1 py-1   min-w-[250px]">REMARK SHOP</th>
+                    <th className="px-1 py-1  w-[200px] truncate">
+                      REMARK SHOP
+                    </th>
                     <th className="px-1 py-1  min-w-[250px]">REMARK PE/PPC</th>
                     <th className="px-1 py-1 min-w-[400px]">
                       TRACKING SHIPMENT
@@ -1900,14 +2445,19 @@ export default function BUSH4() {
                   {paginatedRows.map((row, rowIndex) => (
                     <tr
                       key={row.id}
-                      onClick={() => setActiveRow(row.id)}
+                      onClick={() => {
+                        setActiveRow(row.id); // highlight baris (UI)
+                        setSelectedAcReg((prev) =>
+                          prev === row.ac_reg ? null : row.ac_reg
+                        ); // filter detail (DATA)
+                      }}
                       className={`
-        cursor-pointer
-        ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
-        hover:bg-slate-200
-        ${activeRow === row.id ? 'bg-teal-200' : ''}
-        transition-colors
-      `}
+                    cursor-pointer
+                    ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-100'}
+                    hover:bg-slate-200
+                    ${activeRow === row.id ? 'bg-teal-200' : ''}
+                    transition-colors
+                  `}
                     >
                       {/* NO */}
                       <td className="border px-2 py-1 text-center text-xs text-gray-600">
@@ -2012,16 +2562,16 @@ export default function BUSH4() {
                       {/* STATUS JOB */}
                       <td className="border px-1 py-1 text-center">
                         <span
-                          className={`px-1 py-0.5 rounded text-white
-            ${
-              row.status_job === 'OPEN'
-                ? 'bg-red-500'
-                : row.status_job === 'PROGRESS'
-                ? 'bg-yellow-500'
-                : row.status_job === 'CLOSED'
-                ? 'bg-green-500'
-                : 'bg-transparent'
-            }`}
+                          className={`px-1 py-0.5 rounded text-white text-[11px]
+      ${
+        row.status_job === 'OPEN'
+          ? 'bg-red-500'
+          : row.status_job === 'PROGRESS'
+          ? 'bg-yellow-500'
+          : row.status_job === 'COMPLETED'
+          ? 'bg-green-500'
+          : 'bg-gray-400'
+      }`}
                         >
                           {row.status_job || ''}
                         </span>
@@ -2123,6 +2673,35 @@ export default function BUSH4() {
             >
               Next ▷
             </button>
+
+            <div className="flex gap-1">
+              {/* Expand / Collapse Detail */}
+              <button
+                onClick={() => setIsDetailExpand((v) => !v)}
+                className="px-2 py-0.5 w-30 h-6 rounded border border-gray-500 bg-[#212121] hover:bg-slate-600 "
+              >
+                {isDetailExpand ? 'Collapse' : 'Expand'}
+              </button>
+
+              {/* Tambah tinggi */}
+              {isDetailExpand && (
+                <>
+                  <button
+                    onClick={() => setDetailHeight((h) => h + 30)}
+                    className="w-7 h-6 border border-gray-500 bg-[#212121] text-white rounded hover:bg-green-700 font-bold"
+                  >
+                    +
+                  </button>
+
+                  <button
+                    onClick={() => setDetailHeight((h) => Math.max(30, h - 30))}
+                    className="w-7 h-6 border border-gray-500 bg-[#212121] text-white rounded hover:bg-red-700 font-bold"
+                  >
+                    −
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

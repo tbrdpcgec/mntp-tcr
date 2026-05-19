@@ -20,6 +20,13 @@ const calcTAT = (rts?: string) => {
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 };
 
+const CUSTOMER_OPTIONS = [
+  'GARUDA INDONESIA',
+  'CITILINK',
+  'NON GA/CTV',
+  'NON PROJECT',
+];
+
 export default function Abmp() {
   const [pdfId, setPdfId] = useState<string>('');
   const [message, setMessage] = useState<string>('');
@@ -28,8 +35,8 @@ export default function Abmp() {
   const [loadingTable, setLoadingTable] = useState<boolean>(true);
   const [showModal, setShowModal] = useState(false);
   const [rows, setRows] = useState<
-    { ac_reg: string; type_ac: string; rts: string | null }[]
-  >([{ ac_reg: '', type_ac: '', rts: null }]);
+    { ac_reg: string; customer: string; rts: string | null }[]
+  >([{ ac_reg: '', customer: '', rts: null }]);
 
   const [activeRow, setActiveRow] = useState<number | null>(null);
   const [editingCell, setEditingCell] = useState<{
@@ -38,6 +45,65 @@ export default function Abmp() {
   } | null>(null);
   const [tempValue, setTempValue] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showViewData, setShowViewData] = useState(false);
+  const [viewRows, setViewRows] = useState([]);
+
+  ///untuk tabel ac unik
+  const fetchViewData = async () => {
+    let allRows = [];
+    let from = 0;
+    const limit = 1000;
+    let moreData = true;
+
+    while (moreData) {
+      const { data, error } = await supabase
+        .from('v_project_with_rts_unique')
+        .select('*')
+        .eq('archived', false)
+        .range(from, from + limit - 1);
+
+      if (error) break;
+
+      if (data.length > 0) {
+        allRows = [...allRows, ...data];
+        from += limit;
+
+        if (data.length < limit) moreData = false;
+      } else {
+        moreData = false;
+      }
+    }
+
+    const uniqAcReg = Array.from(
+      new Set(allRows.map((r) => r.ac_reg).filter(Boolean))
+    );
+
+    const summary = uniqAcReg.map((acReg) => {
+      const rowsByAc = allRows.filter((r) => r.ac_reg === acReg);
+
+      return {
+        ac_reg: acReg,
+        customer: rowsByAc[0]?.customer || '',
+        rts: rowsByAc[0]?.rts || '',
+      };
+    });
+
+    // 🔥 SORT SAMA SEPERTI ABMP
+    summary.sort((a, b) => {
+      const tatA = calcTAT(a.rts);
+      const tatB = calcTAT(b.rts);
+
+      if (tatA === null) return 1;
+      if (tatB === null) return -1;
+
+      if (tatA < 0 && tatB >= 0) return 1;
+      if (tatB < 0 && tatA >= 0) return -1;
+
+      return tatA - tatB;
+    });
+
+    setViewRows(summary);
+  };
 
   ////sortir rts
   const sortedTableData = [...tableData].sort((a, b) => {
@@ -134,7 +200,7 @@ export default function Abmp() {
   ////tabel kiri
   const updateCell = async (
     id: string,
-    field: 'ac_reg' | 'type_ac' | 'rts',
+    field: 'ac_reg' | 'customer' | 'rts',
     value: any
   ) => {
     const { error } = await supabase
@@ -172,10 +238,10 @@ export default function Abmp() {
 
       // ===== 2️⃣ Update tableData ke Supabase =====
       // Ambil semua row dari state
-      const payload = tableData.map(({ id, ac_reg, type_ac, rts }) => ({
+      const payload = tableData.map(({ id, ac_reg, customer, rts }) => ({
         id,
         ac_reg,
-        type_ac,
+        customer,
         rts,
       }));
 
@@ -185,7 +251,7 @@ export default function Abmp() {
           .from('abmp')
           .update({
             ac_reg: row.ac_reg,
-            type_ac: row.type_ac,
+            customer: row.customer,
             rts: row.rts,
           })
           .eq('id', row.id);
@@ -205,7 +271,7 @@ export default function Abmp() {
     setLoadingTable(true);
     const { data, error } = await supabase
       .from('abmp')
-      .select('id, ac_reg, rts')
+      .select('id, ac_reg, customer, rts')
       .order('ac_reg', { ascending: true });
 
     if (!error && data) {
@@ -229,6 +295,19 @@ export default function Abmp() {
     <div className="p-1 space-y-2">
       {/* ACTION BAR */}
       <div className="flex items-center gap-2">
+        <button
+          onClick={async () => {
+            if (!showViewData) {
+              await fetchViewData();
+            }
+
+            setShowViewData(!showViewData);
+          }}
+          className="px-3 py-1 text-sm font-semibold bg-indigo-600 text-white rounded-lg"
+        >
+          {showViewData ? 'Hide Data' : 'View Data'}
+        </button>
+
         <button
           onClick={() => setShowModal(true)}
           className="px-3 py-1 text-sm font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 shadow"
@@ -286,7 +365,7 @@ export default function Abmp() {
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="border px-2 py-1 ">AC REG</th>
-                    <th className="border px-2 py-1">Type AC</th> {/* baru */}
+                    <th className="border px-2 py-1">Customer</th> {/* baru */}
                     <th className="border px-2 py-1">RTS</th>
                     <th className="border px-2 py-1 w-10">❌</th>
                   </tr>
@@ -312,19 +391,30 @@ export default function Abmp() {
                       </td>
 
                       <td className="border px-1 py-1">
-                        <input
-                          value={row.type_ac}
-                          onChange={(e) => {
-                            const copy = [...rows];
-                            copy[idx].type_ac = e.target.value;
-                            setRows(copy);
-                          }}
-                          className="
-      w-full border border-transparent
-      hover:border-teal-500 rounded px-1 py-0.5 text-[11px]
-      text-black bg-white
-    "
-                        />
+                        <div className="relative w-full">
+                          <input
+                            type="text"
+                            value={row.customer}
+                            onChange={(e) => {
+                              const copy = [...rows];
+                              copy[idx].customer = e.target.value.toUpperCase();
+                              setRows(copy);
+                            }}
+                            placeholder=" "
+                            className="
+        w-full border border-transparent
+        hover:border-teal-500 rounded px-1 py-0.5 text-[11px]
+        text-black bg-white
+      "
+                            list={`customer_list_${idx}`}
+                          />
+
+                          <datalist id={`customer_list_${idx}`}>
+                            {CUSTOMER_OPTIONS.map((option) => (
+                              <option key={option} value={option} />
+                            ))}
+                          </datalist>
+                        </div>
                       </td>
 
                       <td className="border px-1 py-1">
@@ -364,7 +454,7 @@ export default function Abmp() {
               <div className="flex justify-between">
                 <button
                   onClick={() =>
-                    setRows([...rows, { ac_reg: '', type_ac: '', rts: '' }])
+                    setRows([...rows, { ac_reg: '', customer: '', rts: '' }])
                   }
                   className="text-xs px-2 py-1 bg-blue-500 text-white rounded"
                 >
@@ -384,7 +474,7 @@ export default function Abmp() {
                         .filter((r) => r.ac_reg && r.rts)
                         .map((r) => ({
                           ac_reg: r.ac_reg,
-                          type_ac: r.type_ac,
+                          customer: r.customer,
                           rts: r.rts,
                         }));
 
@@ -407,21 +497,57 @@ export default function Abmp() {
 
       {/* MAIN CONTENT */}
       <div className="grid grid-cols-12 gap-2 h-[80vh]">
+        {showViewData && (
+          <div className="col-span-2 border rounded-lg overflow-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-indigo-600 text-white">
+                  <th className="border px-2 py-1">No</th>
+                  <th className="border px-2 py-1">AC REG</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {viewRows.map((row, i) => (
+                  <tr
+                    key={row.ac_reg}
+                    className={`
+              ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+              hover:bg-slate-200
+              transition-colors
+            `}
+                  >
+                    <td className="border px-2 py-1 text-center">{i + 1}</td>
+
+                    <td className="border px-2 py-1 text-center">
+                      {row.ac_reg}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {/* KIRI - TABLE */}
-        <div className="col-span-3 border rounded-lg overflow-auto">
+        <div
+          className={`border rounded-lg overflow-auto ${
+            showViewData ? 'col-span-3' : 'col-span-3'
+          }`}
+        >
           {loadingTable ? (
             <div className="p-2 text-sm text-gray-500">Loading...</div>
           ) : (
-            <table className="w-full text-xs border-collapse">
+            <table className="w-full text-xs border-collapse table-fixed">
               <thead>
                 <tr className="bg-[#00919f] text-white text-xs font-semibold text-center">
-                  <th className="border px-2 py-1">No</th>
-                  <th className="border px-2 py-1 min-w-[50px]">AC REG</th>
-                  <th className="border px-2 py-1">Type AC</th>
-                  <th className="border px-2 py-1">RTS</th>
-                  <th className="border px-2 py-1">TAT</th>
+                  <th className="border px-2 py-1 w-[30px]">No</th>
+                  <th className="border px-2 py-1  w-[85px]">AC REG</th>
+                  <th className="border px-2 py-1 w-[95px]">Customer</th>
+                  <th className="border px-2 py-1 w-[95px]">RTS</th>
+                  <th className="border px-2 py-1 w-[40px]">TAT</th>
 
-                  <th className="border px-2 py-1">🗑️</th>
+                  <th className="border px-2 py-1 w-[35px]">🗑️</th>
                 </tr>
               </thead>
 
@@ -495,55 +621,68 @@ export default function Abmp() {
                         )}
                       </td>
 
-                      {/* Type AC editable */}
                       <td
                         className="border px-1 py-1 bg-inherit text-center"
                         onClick={() => {
-                          setEditingCell({ id: row.id, field: 'type_ac' });
-                          setTempValue(row.type_ac || '');
+                          setEditingCell({ id: row.id, field: 'customer' });
+                          setTempValue(row.customer || '');
                         }}
                       >
                         {editingCell?.id === row.id &&
-                        editingCell?.field === 'type_ac' ? (
-                          <input
-                            value={tempValue}
-                            onChange={(e) => setTempValue(e.target.value)}
-                            onBlur={() => {
-                              setTableData((prev) =>
-                                prev.map((r) =>
-                                  r.id === row.id
-                                    ? { ...r, type_ac: tempValue }
-                                    : r
-                                )
-                              );
-                              updateCell(row.id, 'type_ac', tempValue); // 🔹 Supabase update
-                              setEditingCell(null);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
+                        editingCell?.field === 'customer' ? (
+                          <>
+                            <input
+                              value={tempValue}
+                              onChange={async (e) => {
+                                const finalValue = e.target.value.toUpperCase();
+
+                                setTempValue(finalValue);
+
                                 setTableData((prev) =>
                                   prev.map((r) =>
                                     r.id === row.id
-                                      ? { ...r, type_ac: tempValue }
+                                      ? { ...r, customer: finalValue }
                                       : r
                                   )
                                 );
-                                updateCell(row.id, 'type_ac', tempValue); // 🔹 Supabase update
+
+                                await updateCell(
+                                  row.id,
+                                  'customer',
+                                  finalValue
+                                );
+                              }}
+                              onBlur={() => {
                                 setEditingCell(null);
-                              }
-                              if (e.key === 'Escape') setEditingCell(null);
-                            }}
-                            autoFocus
-                            className="w-full bg-transparent px-1 py-0.5 text-[11px] rounded-md border border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 text-center"
-                          />
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  setEditingCell(null);
+                                }
+
+                                if (e.key === 'Escape') {
+                                  setEditingCell(null);
+                                }
+                              }}
+                              autoFocus
+                              list={`customer_list_${row.id}`}
+                              className="w-full bg-transparent px-1 py-0.5 text-[11px] rounded-md border border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 text-center"
+                            />
+
+                            <datalist id={`customer_list_${row.id}`}>
+                              {CUSTOMER_OPTIONS.map((option) => (
+                                <option key={option} value={option} />
+                              ))}
+                            </datalist>
+                          </>
                         ) : (
-                          row.type_ac || '-'
+                          row.customer || '-'
                         )}
                       </td>
 
                       {/* RTS editable */}
                       <td
-                        className={`border px-1 py-1 bg-inherit text-center ${
+                        className={`w-[100px] border px-1 py-1 bg-inherit text-center ${
                           isPast ? 'text-red-600 font-semibold' : ''
                         }`}
                         onClick={() => {
@@ -604,7 +743,11 @@ export default function Abmp() {
                             : 'text-green-600'
                         }`}
                       >
-                        {calcTAT(row.rts) !== null ? calcTAT(row.rts) : '-'}
+                        {calcTAT(row.rts) !== null
+                          ? calcTAT(row.rts) < 0
+                            ? 'RTS'
+                            : calcTAT(row.rts)
+                          : '-'}
                       </td>
 
                       <td className="border px-1 py-1 text-center">
