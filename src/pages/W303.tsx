@@ -153,11 +153,12 @@ const COLUMN_ORDER = [
   { key: 'description', label: 'Description' },
 
   { key: 'doc_type', label: 'Doc' },
-  { key: 'location', label: 'Pos' },
+  { key: 'location', label: 'Item' },
   { key: 'doc_status', label: 'Doc Status' },
 
   { key: 'remark', label: 'Remark PE' },
   { key: 'priority', label: 'Priority' },
+  { key: 'opr', label: 'Mhrs' },
   { key: 'status_mw', label: 'Status' },
 
   { key: 'est_date', label: 'Plan FSB' },
@@ -193,7 +194,8 @@ const sortOptions = [
   { value: 'ac_reg', label: 'A/C Reg' },
   { value: 'order', label: 'Order' },
   { value: 'description', label: 'Description' },
-  { value: 'location', label: 'Location' },
+  { value: 'location', label: 'Item' },
+  { value: 'priority', label: 'Priority' },
   { value: 'doc_type', label: 'Doc Type' },
   { value: 'date_in', label: 'Date In' },
   { value: 'doc_status', label: 'Doc Status' },
@@ -241,7 +243,12 @@ export default function W303() {
   const [filterPriority, setFilterPriority] = useState('All');
   const [priorityData, setPriorityData] = useState<any[]>([]);
   const [showArchivedSM1, setShowArchivedSM1] = useState(false);
+  const [editingCell, setEditingCell] = useState<{
+    id: string;
+    field: string;
+  } | null>(null);
 
+  const [tempValue, setTempValue] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -298,14 +305,38 @@ export default function W303() {
   const sortedFilteredRows = [...filteredRows].sort((a, b) => {
     if (!sortKey) return 0;
 
-    const aValue = a[sortKey] || '';
-    const bValue = b[sortKey] || '';
+    let aValue = a[sortKey] || '';
+    let bValue = b[sortKey] || '';
 
-    // Angka dibandingkan sebagai angka, string sebagai string
+    /// PRIORITY CUSTOM SORT
+    if (sortKey === 'priority') {
+      const priorityOrder: Record<string, number> = {
+        'High-1': 1,
+        'High-2': 2,
+        'High-3': 3,
+        'High-4': 4,
+        'High-5': 5,
+        'High-6': 6,
+        'High-7': 7,
+        'High-8': 8,
+        'High-9': 9,
+        'High-10': 10,
+        Med: 11,
+        '': 999,
+      };
+
+      const aRank = priorityOrder[String(aValue)] ?? 999;
+      const bRank = priorityOrder[String(bValue)] ?? 999;
+
+      return sortDirection === 'asc' ? aRank - bRank : bRank - aRank;
+    }
+
+    /// NUMBER SORT
     if (typeof aValue === 'number' && typeof bValue === 'number') {
       return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
     }
 
+    /// STRING SORT
     return sortDirection === 'asc'
       ? String(aValue).localeCompare(String(bValue))
       : String(bValue).localeCompare(String(aValue));
@@ -429,13 +460,16 @@ export default function W303() {
     totalOpen: number;
     totalProgress: number;
     totalClosed: number;
+
     orders: {
       ac_reg: string;
       order: string;
       description: string;
       status: string;
       remark: string;
+      priority: string;
     }[];
+
     supervisor: string;
     crew: string;
   }) => {
@@ -446,19 +480,29 @@ export default function W303() {
       year: 'numeric',
     });
 
-    const header = `*DAILY WORKLOAD REPORT*\n*MACHINING SHOP*\nTCR-5 | ${shiftType}\n${today}`;
-    const summary = `\n\n*TOTAL : ${totalOrder} ORDER*\n${totalOpen} OPEN | ${totalProgress} PROGRESS | ${totalClosed} CLOSED`;
+    const header =
+      `*DAILY WORKLOAD REPORT*\n` +
+      `*MACHINING*\n` +
+      `TCR-5 | ${shiftType}\n` +
+      `${today}`;
+
+    const summary =
+      `\n\n*TOTAL : ${totalOrder} ORDER*` +
+      `\n${totalOpen} OPEN | ${totalProgress} PROGRESS | ${totalClosed} CLOSED`;
 
     const detail = orders
       .map(
         (o, i) =>
-          `\n\n${i + 1}. ${o.ac_reg}\n${o.order}\n${o.description}\n${
-            o.status
-          }\n${o.remark}`
+          `\n\n${i + 1}. ${o.ac_reg}` +
+          `\n${o.order}` +
+          `\n${o.description}` +
+          `\n${o.status}` +
+          `\n${o.remark || ''}` +
+          `\n${o.priority || ''}`
       )
       .join('');
 
-    const closing = `\n\n*BEST REGARDS*\n${supervisor}\n${crew}`;
+    const closing = `\n\n*BEST REGARDS*` + `\n${supervisor}` + `\n${crew}`;
 
     return `${header}${summary}${detail}${closing}`;
   };
@@ -467,7 +511,7 @@ export default function W303() {
   const shift = shiftOut || '-';
 
   const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
-  const paginatedRows = filteredRows.slice(
+  const paginatedRows = sortedFilteredRows.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage
   );
@@ -683,12 +727,31 @@ export default function W303() {
             {/* Kanan: Tombol WhatsApp */}
             <button
               onClick={() => {
-                const filtered = rows.filter(
-                  (r) =>
-                    r.report_mw === true ||
-                    r.report_mw === '1' ||
-                    r.report_mw === 'checked'
-                );
+                const filtered = rows
+                  .filter(
+                    (r) =>
+                      r.report_mw === true ||
+                      r.report_mw === '1' ||
+                      r.report_mw === 'checked'
+                  )
+                  .sort((a, b) => {
+                    const aPriority = String(a.priority || '').trim();
+                    const bPriority = String(b.priority || '').trim();
+
+                    /// PRIORITY DULU
+                    if (aPriority && bPriority) {
+                      return aPriority.localeCompare(bPriority);
+                    }
+
+                    /// YANG PUNYA PRIORITY NAIK KE ATAS
+                    if (aPriority && !bPriority) return -1;
+                    if (!aPriority && bPriority) return 1;
+
+                    /// JIKA KOSONG SEMUA → SORT AC REG
+                    return String(a.ac_reg || '').localeCompare(
+                      String(b.ac_reg || '')
+                    );
+                  });
 
                 if (filtered.length === 0) {
                   alert('Tidak ada data yang dicentang untuk dikirim.');
@@ -718,6 +781,7 @@ export default function W303() {
                     description: r.description || '',
                     status: r.status_mw || '',
                     remark: r.remark_mw || '',
+                    priority: r.priority || '',
                   })),
                   supervisor: supervisorOut,
                   crew: crewOut,
@@ -921,6 +985,36 @@ export default function W303() {
                           }
                           className="form-checkbox h-4 w-4 text-blue-600"
                         />
+                      ) : key === 'priority' ? (
+                        <CustomSelect
+                          value={row[key] || ''}
+                          onChange={(e) =>
+                            handleUpdate(row.id, key, e.target.value)
+                          }
+                          options={[
+                            { label: '', value: '' },
+
+                            { label: 'Med', value: 'Med' },
+
+                            { label: 'High-1', value: 'High-1' },
+                            { label: 'High-2', value: 'High-2' },
+                            { label: 'High-3', value: 'High-3' },
+                            { label: 'High-4', value: 'High-4' },
+                            { label: 'High-5', value: 'High-5' },
+                            { label: 'High-6', value: 'High-6' },
+                            { label: 'High-7', value: 'High-7' },
+                            { label: 'High-8', value: 'High-8' },
+                            { label: 'High-9', value: 'High-9' },
+                            { label: 'High-10', value: 'High-10' },
+                          ]}
+                          className={`border border-transparent rounded px-0.5 py-0.5 text-[11px] font-normal ${
+                            String(row[key] || '').startsWith('High')
+                              ? 'bg-red-500 text-white'
+                              : row[key] === 'Med'
+                              ? 'bg-yellow-500 text-white'
+                              : 'bg-transparent text-white'
+                          }`}
+                        />
                       ) : key === 'status_mw' ? (
                         <CustomSelect
                           value={row[key] || ''}
@@ -947,22 +1041,6 @@ export default function W303() {
                               }
                             `}
                         />
-                      ) : key === 'priority' ? (
-                        <span
-                          className={`px-1 py-0.5 rounded text-xs font-semibold
-                              ${
-                                row[key] === 'High'
-                                  ? 'bg-red-500 text-white'
-                                  : row[key] === 'Med'
-                                  ? 'bg-yellow-500 text-white'
-                                  : row[key] === 'LOW'
-                                  ? 'bg-green-500 text-white'
-                                  : 'text-gray-400'
-                              }
-                            `}
-                        >
-                          {row[key]}
-                        </span>
                       ) : key === 'est_date' ? (
                         <input
                           type="date"
@@ -1024,6 +1102,104 @@ export default function W303() {
                             ))}
                           </datalist>
                         </div>
+                      ) : key === 'opr' ? (
+                        editingCell?.id === row.id &&
+                        editingCell?.field === key ? (
+                          <input
+                            type="text"
+                            value={String(tempValue ?? '')}
+                            onChange={(e) => setTempValue(e.target.value)}
+                            onBlur={() => {
+                              handleUpdate(row.id, key, tempValue);
+
+                              setRows((prev) =>
+                                prev.map((r) =>
+                                  r.id === row.id
+                                    ? { ...r, [key]: tempValue }
+                                    : r
+                                )
+                              );
+
+                              setEditingCell(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleUpdate(row.id, key, tempValue);
+
+                                setRows((prev) =>
+                                  prev.map((r) =>
+                                    r.id === row.id
+                                      ? { ...r, [key]: tempValue }
+                                      : r
+                                  )
+                                );
+
+                                setEditingCell(null);
+                              }
+
+                              if (e.key === 'Escape') {
+                                setEditingCell(null);
+                              }
+                            }}
+                            autoFocus
+                            className="
+                                w-full
+                                max-w-[100px]
+                                bg-transparent
+                                px-1 py-0.5
+                                text-[11px]
+                                text-white
+                                rounded-md
+                                border
+                                text-left
+                                break-words
+                                whitespace-normal
+                                border-teal-500
+                                focus:outline-none
+                                focus:ring-1
+                                focus:ring-teal-500
+                              "
+                          />
+                        ) : (
+                          <div
+                            onDoubleClick={() => {
+                              setEditingCell({
+                                id: row.id,
+                                field: key,
+                              });
+
+                              setTempValue(String(row[key] ?? ''));
+                            }}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+
+                              setEditingCell({
+                                id: row.id,
+                                field: key,
+                              });
+
+                              setTempValue(String(row[key] ?? ''));
+                            }}
+                            title="Double click to edit"
+                            className="
+                                w-full
+                                px-1
+                                py-2
+                                cursor-text
+                                text-left
+                                break-words
+                                whitespace-normal
+                                border
+                                border-transparent
+                                rounded-md
+                                hover:border-teal-500
+                              "
+                          >
+                            <span className="block text-white">
+                              {String(row[key] ?? '')}
+                            </span>
+                          </div>
+                        )
                       ) : key === 'handle_by_mw' ? (
                         <div className="relative w-full">
                           <input
