@@ -1946,7 +1946,7 @@ export default function BUSH4() {
           {/* 👇 PEMBUNGKUS 2 TABEL */}
           <div className="w-full flex gap-3 items-start">
             {/* ================= LEFT: CHART ================= */}
-            <div className="w-full min-w-[290px] max-w-[30vw] flex flex-col gap-2 shrink-0">
+            <div className="w-full min-w-[200px] max-w-[29vw] flex flex-col gap-2 shrink-0">
               <div className="w-full flex flex-col gap-2">
                 {/* 🔥 CHART SECTION */}
                 <div className="grid grid-cols-1 gap-2">
