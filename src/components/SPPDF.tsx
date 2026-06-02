@@ -167,7 +167,7 @@ const ShippingCopy = ({ data, sentBy, packedBy, toUnit }: any) => {
         {/* LEFT */}
         <View style={styles.leftHeader}>
           <Image
-            src="/public/gmf.png"
+            src="/gmf.png"
             style={{ width: 170, height: 'auto', marginLeft: 15 }} // ubah ukuran sesuai kebutuhan
           />
         </View>
